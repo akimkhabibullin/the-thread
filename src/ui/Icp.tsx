@@ -30,7 +30,6 @@ export function IcpView() {
     <div className="profile">
       <div className="spread">
         <div className="spread-left">
-          <div className="who">Customer profile · {icp.product}</div>
           <h1 className="statement">
             {icp.product} sells to {and(personas)} at {and(inds)} companies of {min.toLocaleString()} to {max.toLocaleString()} people<span className="red">{icp.triggers.value[0] ? `, usually when ${icp.triggers.value[0].charAt(0).toLowerCase()}${icp.triggers.value[0].slice(1)}.` : '.'}</span>
           </h1>
@@ -49,8 +48,8 @@ export function IcpView() {
         <h2>Ways to widen it</h2>
         <div className="expansions">{open.map((e) => (
           <div key={e.id} className="exp">
-            <div className="who">{e.field}</div>
             <h3>{e.suggestion}</h3>
+            <div className="exp-field">Widens: {e.field}</div>
             <p className="quiet">{e.why}</p>
             <div className="pills">
               <button className="pill solid" onClick={() => sendWs({type: 'expansion', id: e.id, action: 'accepted'})}>Accept</button>

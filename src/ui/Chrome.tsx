@@ -1,5 +1,6 @@
 // The frame around every page: logo, hamburger menu panel, quiet status line, agent feed, page heads and step links.
 import {useEffect, useRef, useState} from 'react';
+import {Icon} from './Icon';
 import {ago, post, sendWs, useLink} from '../link';
 import {href, pad, Route, STEPS, StepId} from '../route';
 import {useStartHref} from './Start';
@@ -38,7 +39,7 @@ export function Menu({open, onClose, route}: {open: boolean; onClose: () => void
     <div className={`menu-wrap ${open ? 'open' : ''}`} aria-hidden={!open}>
       <div className="menu-veil" onClick={onClose} />
       <nav className="menu-panel">
-        <div className="menu-top"><Logo words={false} /><button className="close" onClick={onClose} aria-label="Close menu">×</button></div>
+        <div className="menu-top"><Logo words={false} /><button className="close" onClick={onClose} aria-label="Close menu"><Icon name="x" size={26} /></button></div>
         <ol className="menu-steps">
           {STEPS.map((s) => (
             <li key={s.id}><a href={href(s.id)} onClick={onClose} className={route === s.id ? 'on' : ''}>{s.title}</a></li>
@@ -67,7 +68,7 @@ export function Feed({open, onClose}: {open: boolean; onClose: () => void}) {
   useEffect(() => { if (open) end.current?.scrollIntoView({block: 'end'}); }, [db.thoughts.length, open]);
   return (
     <aside className={`feed ${open ? 'open' : ''}`} aria-hidden={!open}>
-      <div className="feed-top"><span className="feed-title"><AgentMark size={26} />What the agent is doing <em>· {agentLabel(connected, status)}</em></span><button className="close" onClick={onClose} aria-label="Close">×</button></div>
+      <div className="feed-top"><span className="feed-title"><AgentMark size={26} />What the agent is doing <em>· {agentLabel(connected, status)}</em></span><button className="close" onClick={onClose} aria-label="Close"><Icon name="x" size={22} /></button></div>
       <div className="feed-list">
         {db.thoughts.slice(-80).map((t, i) => (
           <div key={i} className="thought">
@@ -95,7 +96,7 @@ function FeedComposer() {
       {last && <div className="feed-last"><span className="meta">Last message · {ago(last.at)} ago</span><p>{last.text.length > 220 ? last.text.slice(0, 220) + '…' : last.text}</p></div>}
       <textarea rows={2} value={text} placeholder="Message the agent: “find leads in fintech”, “skip agencies”…" onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
-      <div className="feed-compose-row"><a href={href('brief')}>Full conversation →</a><button className="pill solid" onClick={send} disabled={!text.trim()}>Send</button></div>
+      <div className="feed-compose-row"><a className="iconlink" href={href('brief')}>Full conversation <Icon name="arrow-right" size={15} /></a><button className="pill solid" onClick={send} disabled={!text.trim()}>Send</button></div>
     </div>
   );
 }
@@ -110,7 +111,7 @@ export function TopBar({route, onMenu, onFeed, feedOpen}: {route: StepId; onMenu
     <header className="topbar">
       <div className="tb-left">
         <Logo tone={route === 'network' ? 'white' : 'red'} />
-        <span className="where"><span className="n">{pad(i + 1)} / {pad(STEPS.length)}</span>{STEPS[i].title}</span>
+        <span className="where">{STEPS[i].title}</span>
       </div>
       <div className="tb-right">
         <span className={`credits ${u.credits <= 5 ? 'low' : ''}`} title="Enrichment credits left, metered with Flexprice">{u.credits} credits</span>
@@ -136,8 +137,8 @@ export function StepLinks({route}: {route: StepId}) {
   const prev = STEPS[i - 1], next = STEPS[i + 1];
   return (
     <nav className="steplinks">
-      {prev ? <a href={href(prev.id)}><span className="n">← {pad(i)}</span>{prev.title}</a> : <a href={href('home')}><span className="n">←</span>Home</a>}
-      {next ? <a className="next" href={href(next.id)}><span className="n">{pad(i + 2)} →</span>{next.title}</a> : <a className="next" href={href('brief')}><span className="n">01 →</span>Back to the brief</a>}
+      {prev ? <a href={href(prev.id)}><span className="n"><Icon name="arrow-left" size={15} />Previous</span>{prev.title}</a> : <a href={href('home')}><span className="n"><Icon name="arrow-left" size={15} />Back</span>Home</a>}
+      {next ? <a className="next" href={href(next.id)}><span className="n">Next<Icon name="arrow-right" size={15} /></span>{next.title}</a> : <a className="next" href={href('brief')}><span className="n">Start again<Icon name="arrow-right" size={15} /></span>Brief</a>}
     </nav>
   );
 }

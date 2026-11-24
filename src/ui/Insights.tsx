@@ -11,7 +11,7 @@ const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : 'â€
 function Funnel({title, groups}: {title: string; groups: [string, LeadView[]][]}) {
   return (
     <div className="stat-block">
-      <h3>{title}</h3>
+      <h2 className="h-sub">{title}</h2>
       <table className="mini">
         <thead><tr><th></th><th>Leads</th><th>Contacted</th><th>Replied</th><th>Meeting</th><th>Won</th></tr></thead>
         <tbody>{groups.map(([k, ls]) => {
@@ -26,7 +26,7 @@ function Bars({title, rows}: {title: string; rows: [string, number, boolean][]})
   const max = Math.max(1, ...rows.map((r) => r[1]));
   return (
     <div className="bars">
-      <h3>{title}</h3>
+      <h2 className="h-sub">{title}</h2>
       {rows.map(([k, v, hi]) => (
         <div key={k} className="bar-row"><span className="bar-k">{k}</span><span className="bar-track"><i className={hi ? 'hi' : ''} style={{width: `${(v / max) * 100}%`}} /></span><span className="bar-v">{v}</span></div>
       ))}
@@ -55,11 +55,11 @@ export function InsightsView() {
   return (
     <div className="insights">
       <PageHead title="Insights" lede="What is working, and everything that happened, with who did it." />
-      <div className="numbers">
-        <div className="number-row"><Num n={db.drafts.length} /><p>drafts written, {db.drafts.filter((d) => d.kind === 'intro_request').length} of them intro requests through someone you know.</p></div>
-        <div className="number-row"><Num n={approvedN} /><p>approved by you and queued. {db.drafts.filter((d) => d.status === 'rejected').length} rejected, and the agent learns from why.</p></div>
-        <div className="number-row"><Num n={repliedN} /><p>{repliedN === 1 ? 'reply' : 'replies'} so far. {warm.approved || cold.approved ? <>Warm intros {pct(warm.replied, warm.approved)}, cold emails {pct(cold.replied, cold.approved)}.</> : 'Reply rates show up once something is queued.'}</p></div>
-      </div>
+      <dl className="kpis">
+        <div><dt>Drafts written</dt><dd>{db.drafts.length}</dd><p>{db.drafts.filter((d) => d.kind === 'intro_request').length} are intro requests through someone you know</p></div>
+        <div><dt>Approved and queued</dt><dd>{approvedN}</dd><p>{db.drafts.filter((d) => d.status === 'rejected').length} rejected; the agent learns from why</p></div>
+        <div><dt>Replies</dt><dd>{repliedN}</dd><p>{warm.approved || cold.approved ? <>Warm intros {pct(warm.replied, warm.approved)}, cold emails {pct(cold.replied, cold.approved)}</> : 'Reply rates show up once something is queued'}</p></div>
+      </dl>
       <div className="charts">
         <Bars title="Leads by tier" rows={(['A', 'B', 'C'] as const).map((t) => [`Tier ${t}`, L.filter((l) => l.tier === t).length, t === 'A'])} />
         <Bars title="Where they are" rows={STAGES.map((st) => [st.charAt(0).toUpperCase() + st.slice(1), L.filter((l) => l.person.stage === st).length, st === 'meeting' || st === 'closed'])} />
@@ -68,11 +68,11 @@ export function InsightsView() {
       <div className="two">
         <Funnel title="By tier" groups={group(L, (l) => `Tier ${l.tier}`).sort()} />
         <Funnel title="By industry" groups={group(L, (l) => l.company?.industry ?? 'Unknown')} />
-        <div className="stat-block"><h3>A/B variants</h3>
+        <div className="stat-block"><h2 className="h-sub">A/B variants</h2>
           <table className="mini"><thead><tr><th></th><th>Drafted</th><th>Approved</th><th>Replied</th></tr></thead>
             <tbody>{variants.map((x) => <tr key={x.v}><td>{x.v}<div className="quiet small">{x.angles.join(' Â· ')}</div></td><td>{x.drafted}</td><td>{x.approved}</td><td>{x.replied}</td></tr>)}</tbody></table>
         </div>
-        <div className="stat-block"><h3>Warm vs cold</h3>
+        <div className="stat-block"><h2 className="h-sub">Warm vs cold</h2>
           <table className="mini"><thead><tr><th></th><th>Queued</th><th>Replied</th><th>Rate</th></tr></thead>
             <tbody>{kinds.map((x) => <tr key={x.k}><td>{x.k === 'intro_request' ? 'Intro requests' : 'Cold'}</td><td>{x.approved}</td><td>{x.replied}</td><td>{pct(x.replied, x.approved)}</td></tr>)}</tbody></table>
         </div>

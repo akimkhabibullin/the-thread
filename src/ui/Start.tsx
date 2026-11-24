@@ -1,5 +1,6 @@
 // Guided setup at #/start/1..4: about you, your network, connect the agent, what you sell. One calm step per screen.
 import {useEffect, useState} from 'react';
+import {Icon} from './Icon';
 import {post, sendWs, useLink} from '../link';
 import {go, href} from '../route';
 import {Burger, Logo} from './Chrome';
@@ -81,7 +82,7 @@ export function Start({onMenu}: {onMenu: () => void}) {
         <ol className="setup-steps">
           {SETUP.map((s, i) => (
             <li key={s}><a href={`#/start/${i + 1}`} className={`${step === i + 1 ? 'on' : ''} ${done[i] ? 'done' : ''}`}>
-              <span className="n">{done[i] ? '✓' : i + 1}</span>{s}</a></li>
+              <span className="n">{done[i] ? <Icon name="check" size={14} /> : i + 1}</span>{s}</a></li>
           ))}
         </ol>
 
@@ -103,11 +104,11 @@ export function Start({onMenu}: {onMenu: () => void}) {
           <div className="setup-two">
             <label className="drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) void upload(file); }}>
               <input type="file" accept=".csv" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
-              {f.network.length ? <><span className="drop-num">{f.network.length}<i>.</i></span><span>connections at {companies} companies</span><span className="small">{withCo} with a company · {f.network.length - withCo} without</span><span className="quiet small">Drop a new file to replace</span></>
+              {f.network.length ? <><span className="drop-num">{f.network.length}</span><span>connections at {companies} companies</span><span className="small">{withCo} with a company · {f.network.length - withCo} without</span><span className="quiet small">Drop a new file to replace</span></>
                 : <><span className="drop-title">Drop Connections.csv</span><span className="quiet small">or click to choose a file</span></>}
             </label>
             <div>
-              <h3>How to get the file</h3>
+              <h2 className="h-sub">How to get the file</h2>
               <ol className="howto">
                 <li>On LinkedIn, click <b>Me</b>, then <b>Settings &amp; Privacy</b>.</li>
                 <li>Open <b>Data privacy</b>, then <b>Download your data</b> (<a className="u" href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" rel="noreferrer">direct link</a>).</li>
@@ -127,12 +128,12 @@ export function Start({onMenu}: {onMenu: () => void}) {
           <p className="lede">The Thread uses Claude Code as its brain: it does the research, writes the drafts and checks the sources. It runs on your own Claude account, so there is nothing to pay for here.</p>
           <div className="setup-two setup-agent">
             <div>
-              <h3>In a terminal</h3>
+              <h2 className="h-sub">In a terminal</h2>
               <Copy cmd="cd /path/to/the-thread" />
               <Copy cmd="claude" />
               <p className="small">Then, inside Claude Code, type:</p>
               <Copy cmd="/thread" />
-              <h3 className="mt">Or from any other project</h3>
+              <h2 className="h-sub mt">Or from any other project</h2>
               <p className="small">Add The Thread as an MCP server, then ask Claude to start it.</p>
               <Copy cmd="claude mcp add --transport http thread http://127.0.0.1:5299/mcp" />
             </div>

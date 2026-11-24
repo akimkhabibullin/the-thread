@@ -1,5 +1,6 @@
 // Step 01: talk to the agent. A clear "what now" up top, then the conversation, its questions and its proposed profile changes.
 import {useEffect, useRef, useState} from 'react';
+import {Icon} from './Icon';
 import {sendWs, useLink} from '../link';
 import {leads} from '../../shared/logic';
 import {href} from '../route';
@@ -18,8 +19,7 @@ function WhatNow({focus}: {focus: () => void}) {
 
   if (!db.icp) return (
     <div className="whatnow">
-      <div className="wn-top"><AgentMark size={30} /><div className="who">What now</div></div>
-      <h2>Tell it what you sell<span className="red">.</span></h2>
+      <h2 className="wn-h"><AgentMark size={30} />Tell it what you sell</h2>
       <p>Two or three sentences below: what it does, who it's for, what it costs. The agent turns that into a customer profile, then starts finding people.</p>
       <div className="pills"><button className="pill solid" onClick={focus}>Write it below</button></div>
       {offline}
@@ -27,8 +27,7 @@ function WhatNow({focus}: {focus: () => void}) {
   );
   if (!agentOn) return (
     <div className="whatnow">
-      <div className="wn-top"><AgentMark size={30} /><div className="who">What now</div></div>
-      <h2>Start the agent<span className="red">.</span></h2>
+      <h2 className="wn-h"><AgentMark size={30} />Start the agent</h2>
       <p>The Thread uses Claude Code to do the research and writing. It isn't running right now, so messages here will wait.</p>
       <div className="pills"><a className="pill solid" href="#/start/3">How to connect it</a></div>
     </div>
@@ -60,10 +59,10 @@ function WhatNow({focus}: {focus: () => void}) {
   );
   if (steps.length) return (
     <div className="whatnow big">
-      <div className="wn-top"><AgentMark size={30} /><div className="who">What now · {steps.length === 1 ? 'one thing' : `${Math.min(3, steps.length)} things`} for you</div></div>
+      <h2 className="wn-h"><AgentMark size={30} />{steps.length === 1 ? 'One thing for you now' : `${['', '', 'Two', 'Three'][Math.min(3, steps.length)]} things for you now`}</h2>
       <div className="nextsteps">{steps.slice(0, 3).map((st, i) => (
         <a key={st.label} className="nextstep" href={st.to} onClick={st.to === '#asks' ? (e) => { e.preventDefault(); document.getElementById('asks')?.scrollIntoView({behavior: 'smooth', block: 'center'}); } : undefined}>
-          <span className="ns-n">{i + 1}</span><span className="ns-label">{st.label}{st.sub && <span className="ns-sub"> · {st.sub}</span>}</span><span className="ns-arrow">→</span>
+          <span className="ns-label">{st.label}{st.sub && <span className="ns-sub"> · {st.sub}</span>}</span><Icon name="arrow-right" size={26} className="ns-arrow" />
         </a>))}
       </div>
       <details className="wn-more"><summary>Or ask it for more</summary>{ideas}</details>
@@ -71,8 +70,7 @@ function WhatNow({focus}: {focus: () => void}) {
   );
   return (
     <div className="whatnow">
-      <div className="wn-top"><AgentMark size={30} /><div className="who">What now</div></div>
-      <h2>Keep it finding people<span className="red">.</span></h2>
+      <h2 className="wn-h"><AgentMark size={30} />Keep it finding people</h2>
       <p>You're all caught up. Pick one, or write your own below.</p>
       {ideas}
     </div>
@@ -101,16 +99,15 @@ export function BriefView() {
       {(openQ.length > 0 || openC.length > 0) && <div className="asks" id="asks">
         {openQ.map((q) => (
           <div key={q.qid} className="paper ask">
-            <div className="who"><AgentMark size={22} /> asks you{q.agent && !/warmpath|thread/i.test(q.agent) ? ` · ${q.agent}` : ''}</div>
-            <h3>{q.question}</h3>
+            <h2 className="ask-q"><AgentMark size={24} /><span>{q.question}</span></h2>
+            <p className="quiet small">A question for you{q.agent && !/warmpath|thread/i.test(q.agent) ? ` from the ${q.agent}` : ''}. Pick one, or answer in your own words below.</p>
             <div className="pills">{q.options.map((o) => <button key={o} className="pill" onClick={() => sendWs({type: 'answer', qid: q.qid, text: o})}>{o}</button>)}</div>
           </div>
         ))}
         {openC.map((c) => (
           <div key={c.id} className="paper learn">
-            <div className="who">Learned from your rejections</div>
-            <h3>{c.change}</h3>
-            <p className="quiet">{c.evidence}</p>
+            <h2 className="ask-q">{c.change}</h2>
+            <p className="quiet">Learned from your rejections: {c.evidence}</p>
             <div className="pills">
               <button className="pill solid" onClick={() => sendWs({type: 'icp_change', id: c.id, action: 'accepted'})}>Yes, update the profile</button>
               <button className="pill" onClick={() => sendWs({type: 'icp_change', id: c.id, action: 'dismissed'})}>No, keep it</button>
@@ -118,7 +115,7 @@ export function BriefView() {
           </div>
         ))}
       </div>}
-      {db.chat.length > 0 && <div className="convo-label">Conversation</div>}
+      {db.chat.length > 0 && <h2 className="convo-label">Conversation</h2>}
       <div className="convo">
         {db.chat.map((m, i) => (
           <div key={i} className={`msg ${m.from}`}>
@@ -129,7 +126,7 @@ export function BriefView() {
             </div>
           </div>
         ))}
-        {status === 'working' && <div className="working"><i />The agent is working…</div>}
+        {status === 'working' && <div className="working" role="status"><i />The agent is working…</div>}
         <div ref={end} />
       </div>
       <div className="composer">

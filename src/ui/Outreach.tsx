@@ -37,8 +37,8 @@ function Reader({d}: {d: Draft}) {
   return (
     <article className={`reader ${d.status}`}>
       <header className="reader-head">
-        <div className="who">{d.kind === 'referral_ask' && <span className="badge-ref">Referral ask</span>}{d.kind === 'intro_request' ? `Intro request via ${via?.name ?? 'a connection'}` : d.kind === 'referral_ask' ? 'To your customer, asking for intros' : 'Cold sequence'} · variant {d.variant}</div>
         <h2>{lead?.person.name}</h2>
+        <div className="reader-kind">{d.kind === 'referral_ask' && <span className="badge-ref">Referral ask</span>}{d.kind === 'intro_request' ? `Intro request via ${via?.name ?? 'a connection'}` : d.kind === 'referral_ask' ? 'To your customer, asking for intros' : 'Cold sequence'} · variant {d.variant}</div>
         <div className="quiet">{lead?.person.title}, {lead?.company?.name}{lead && <> · <Tier tier={lead.tier} score={lead.score} /></>}</div>
         <div className="quiet small">Angle: {d.angle}</div>
       </header>
@@ -67,7 +67,7 @@ function Reader({d}: {d: Draft}) {
         </ol>}
         <aside className="margin-note">
           {r ? <>
-            <div className="proof-num">{r.proofScore}<i>.</i></div>
+            <div className="proof-num">{r.proofScore}<span>%</span></div>
             <div className="small">proof score</div>
             <p className="small">{r.by} {r.verdict === 'pass' ? 'checked every claim against its source.' : 'flagged this draft.'}{r.note && ` ${r.note}`}</p>
             {r.unsupported.map((u, i) => <p key={i} className="small red-deep">Unsupported: “{u}”</p>)}

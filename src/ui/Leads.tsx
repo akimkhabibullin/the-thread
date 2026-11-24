@@ -7,7 +7,7 @@ import {Empty, PageHead} from './Chrome';
 import {readSeen, writeSeen} from './Agent';
 
 export const Sources = ({s}: {s: Source[]}) => <span className="sources">{s.map((x, i) => <a key={i} href={x.url} target="_blank" rel="noreferrer" title={x.title ?? x.url} onClick={(e) => e.stopPropagation()}>{i + 1}</a>)}</span>;
-export const Num = ({n, className = ''}: {n: number | string; className?: string}) => <span className={`num ${className}`}>{n}<i>.</i></span>;
+export const Num = ({n, className = ''}: {n: number | string; className?: string}) => <span className={`num ${className}`}>{n}</span>;
 export const Tier = ({tier, score}: {tier: string; score: number}) => <span className="tier" title={`Score ${score}`}>Tier {tier} · {score}</span>;
 const PATH_LABEL = {colleague: 'knows someone there', former_colleague: 'knows an ex-colleague', shared_employer: 'same ex-employer', shared_school: 'same school', shared_community: 'same community'};
 

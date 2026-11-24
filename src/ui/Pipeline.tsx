@@ -1,5 +1,6 @@
 // Step 06: the board. Drag cards or pick a stage; each card says who moved it (the agent or you) and when.
 import {ago, sendWs, useLink} from '../link';
+import {Icon} from './Icon';
 import {leads} from '../../shared/logic';
 import {STAGES, Stage} from '../../shared/types';
 import {PageHead} from './Chrome';
@@ -13,7 +14,7 @@ function Referral({personId}: {personId: string}) {
   return (
     <div className="referral">
       <div className="ref-title">Ask for intros</div>
-      {d ? <a className="u small" href={href('outreach')}>{d.status === 'pending' ? 'Draft ready for you' : d.status === 'approved' ? 'Approved, queued' : 'Rejected'} · Outreach →</a>
+      {d ? <a className="u small" href={href('outreach')}>{d.status === 'pending' ? 'Draft ready for you' : d.status === 'approved' ? 'Approved, queued' : 'Rejected'} · Outreach <Icon name="arrow-right" size={13} /></a>
         : <span className="small quiet">The agent is writing an intro ask…</span>}
     </div>
   );
@@ -34,7 +35,7 @@ export function PipelineView() {
               <div className="col-head"><span>{LABEL[st]}</span><span className="quiet">{col.length}</span></div>
               {col.map((l) => (
                 <div key={l.person.id} className="kcard" draggable onDragStart={(e) => e.dataTransfer.setData('text/plain', l.person.id)}>
-                  <div className="k-top"><span className="strong">{l.person.name}</span><span className="k-score">{l.score}<i>.</i></span></div>
+                  <div className="k-top"><span className="strong">{l.person.name}</span><span className="k-score">{l.score}</span></div>
                   <div className="quiet small">{l.person.title}, {l.company?.name}</div>
                   {l.paths[0] && <div className="small warm">via {l.paths[0].hops[1]}</div>}
                   {st === 'closed' && <Referral personId={l.person.id} />}

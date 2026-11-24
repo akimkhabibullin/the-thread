@@ -1,5 +1,6 @@
 // Step 04: the founder's own network. A dark band with the warm paths, then the file, the background, and contacts that need a company.
 import {useEffect, useState} from 'react';
+import {Icon} from './Icon';
 import {post, sendWs, useLink} from '../link';
 import {leads, superConnectors} from '../../shared/logic';
 import type {Contact} from '../../shared/types';
@@ -55,19 +56,14 @@ export function NetworkView() {
           <h1>Network</h1>
           <p className="lede">The people you already know are the shortest way in.</p>
           {warm.length > 0 ? <div className="paths">
-            <div className="who">{warm.length} warm {warm.length === 1 ? 'path' : 'paths'} · of {db.people.length} leads</div>
+            <h2 className="paths-h">{warm.length} warm {warm.length === 1 ? 'path' : 'paths'}<span> into {db.people.length} leads</span></h2>
             {warm.map((l) => (
               <div key={l.person.id} className="path-row">
                 <Hops hops={l.paths[0].hops} big />
                 <div className="path-meta"><span>{l.paths[0].text}</span><span className="dim">{l.person.title}, {l.company?.name} · <Tier tier={l.tier} score={l.score} /></span></div>
               </div>))}
           </div> : <p className="dim center">{f.network.length ? 'No overlaps with the current leads yet. More leads, more chances.' : 'Add your connections below to find warm paths.'}</p>}
-          <div className="net-stats">
-            <div><span className="big">{f.network.length}<i>.</i></span>connections</div>
-            <div><span className="big">{companies}<i>.</i></span>companies</div>
-            <div><span className="big">{deals.length}<i>.</i></span>from your deals</div>
-            <div><span className="big">{needs.length}<i>.</i></span>need a company</div>
-          </div>
+          <p className="net-stats"><b>{f.network.length}</b> connections at <b>{companies}</b> companies. <b>{deals.length}</b> from your deals, <b>{needs.length}</b> still {needs.length === 1 ? 'needs' : 'need'} a company.</p>
           {deals.length > 0 && <p className="deal-line">From your deals: {deals.map((c, i) => <span key={c.id}>{i > 0 && ', '}{c.name} <OriginTag c={c} /></span>)}</p>}
         </div>
       </section>
@@ -90,9 +86,8 @@ export function NetworkView() {
         </div>}
         {toMeet.length > 0 && <div className="connectors">{toMeet.map((c) => (
           <div key={c.id} className="connector">
-            <div className="who">{c.company}</div>
             <h3>{c.name}</h3>
-            <div className="quiet small">{c.title}</div>
+            <div className="quiet small">{c.title}, {c.company}</div>
             <p>{c.why}</p>
             {c.unlocks.length > 0 && <p className="small"><span className="quiet">Could open:</span> {c.unlocks.join(', ')}</p>}
             {c.sources.length > 0 && <p className="small quiet">{c.sources.map((x, i) => <a key={i} className="u" href={x.url} target="_blank" rel="noreferrer">{x.title ?? host(x.url)}</a>).reduce<React.ReactNode[]>((a, el, i) => (i ? [...a, ' · ', el] : [el]), [])}</p>}
@@ -108,7 +103,7 @@ export function NetworkView() {
         {moves.map((m, i) => (
           <div key={i} className={`move ${m.intoTarget ? 'target' : ''}`}>
             <span className="mv-name">{m.name}</span>
-            <span className="mv-to">→ {m.to}{m.position && `, ${m.position}`}{m.intoTarget && <span className="joined">target company</span>}</span>
+            <span className="mv-to"><Icon name="arrow-right" size={15} /> {m.to}{m.position && `, ${m.position}`}{m.intoTarget && <span className="joined">target company</span>}</span>
             <span className="quiet small">from {m.from || 'unknown'} · {new Date(m.at).toLocaleDateString([], {month: 'short', day: 'numeric'})} · <a className="u" href={m.source} target="_blank" rel="noreferrer">{host(m.source)}</a></span>
           </div>))}
       </section>}
@@ -117,7 +112,7 @@ export function NetworkView() {
         <div className="paper-wrap"><div className="paper-back" />
           <label className="drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) void upload(file); }}>
             <input type="file" accept=".csv" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
-            {f.network.length ? <><span className="drop-num">{f.network.length}<i>.</i></span><span>connections, {withCo.length} with a company</span>{f.networkFile && <span className="quiet small">{f.networkFile} · drop a new file to replace</span>}</>
+            {f.network.length ? <><span className="drop-num">{f.network.length}</span><span>connections, {withCo.length} with a company</span>{f.networkFile && <span className="quiet small">{f.networkFile} · drop a new file to replace</span>}</>
               : <><span className="drop-title">Drop Connections.csv</span><span className="quiet small">or click to choose a file</span></>}
           </label>
         </div>

@@ -1,5 +1,6 @@
 // How the agent speaks in the UI: its mark, readable text (paragraphs, numbered lists), links to the pages it mentions, and a toast when it finishes something.
 import {useEffect, useState} from 'react';
+import {Icon} from './Icon';
 import {useLink} from '../link';
 import {href, Route} from '../route';
 import type {ChatAction, ChatMsg} from '../../shared/types';
@@ -25,7 +26,7 @@ export function actionsFor(m: ChatMsg): ChatAction[] {
   return out.slice(0, 3);
 }
 export const ActionPills = ({actions, onClick}: {actions: ChatAction[]; onClick?: () => void}) => actions.length ? (
-  <div className="msg-actions">{actions.map((a) => <a key={a.to + a.label} className="pill sm" href={href(a.to as Route)} onClick={onClick}>{a.label} →</a>)}</div>
+  <div className="msg-actions">{actions.map((a) => <a key={a.to + a.label} className="pill sm" href={href(a.to as Route)} onClick={onClick}>{a.label}<Icon name="arrow-right" size={15} /></a>)}</div>
 ) : null;
 
 /* ---------- readable agent text ---------- */
@@ -79,10 +80,10 @@ export function AgentToast({route}: {route: Route}) {
   return (
     <div className="toast" role="status">
       <AgentMark size={30} />
-      <div className="toast-text"><div className="who">The agent finished something</div><p>{line.length > 160 ? line.slice(0, line.lastIndexOf(' ', 160)) + '…' : line}</p></div>
+      <div className="toast-text"><p><b>The agent finished something.</b> {line.length > 160 ? line.slice(0, line.lastIndexOf(' ', 160)) + '…' : line}</p></div>
       <ActionPills actions={actionsFor(latest).filter((a) => a.to !== route)} onClick={dismiss} />
       <a className="link" href={href('brief')} onClick={dismiss}>Read it</a>
-      <button className="close" onClick={dismiss} aria-label="Dismiss">×</button>
+      <button className="close" onClick={dismiss} aria-label="Dismiss"><Icon name="x" size={20} /></button>
     </div>
   );
 }
