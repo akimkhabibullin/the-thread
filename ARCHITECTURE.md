@@ -143,7 +143,7 @@ Three meters, counted locally in `db.usage` and shown in the app: `leads_enriche
 | 4 Enrichment & outreach | Hunter emails (cached, credit-gated), multi-touch A/B sequences, intro vs cold, Reviewer, approval gate | `server/hunter.ts`, `draft_outreach` / `review_draft`, `src/ui/Outreach.tsx` |
 | 5 Dashboard | Kanban stages, fit & intent tiers, AI-vs-founder attribution, conversion, A/B, warm vs cold, audit log, agent feed | `src/ui/Pipeline.tsx`, `src/ui/Insights.tsx`, `src/ui/Chrome.tsx` (feed) |
 | Bonus: Flexprice | Three meters, credits in the top bar, enrichment blocked at 0 | `server/meter.ts`, `server/hunter.ts` |
-| Bonus: multi-agent roles | One Claude Code session plays planner, scout, writer, reviewer (each tool call tagged with `agent`) | `server/index.ts`, `.claude/commands/thread.md` |
+| Bonus: Band multi-agent | Four Claude Code agents in a Band room (@planner, @scout, @writer, @reviewer) hand work to each other with @mentions; only @planner reads the app's task queue. Single-agent fallback: `claude "/thread"` | `agents/*.md`, `server/index.ts`, `.claude/commands/thread.md` |
 
 ## MCP tools (`server/index.ts`)
 
@@ -170,3 +170,20 @@ Three meters, counted locally in `db.usage` and shown in the app: `leads_enriche
 | `suggest_icp_change` | Proposes an ICP change with evidence; the founder accepts or dismisses. |
 
 REST on the bridge: `POST /api/network` (CSV + background), `POST /api/demo/save`, `POST /api/demo/load`, `POST /api/reset`, `GET /api/health`.
+
+## Multi-agent with Band
+
+The same MCP tools can be driven by one Claude Code session (`/thread`) or by a team of four Claude Code agents in a [Band](https://docs.band.ai) room. Each agent runs on the founder's machine in this folder, so all four see the `thread` MCP server; Band carries the messages between them.
+
+```
+founder (app) ──task──▶ @planner ──brief──▶ @scout ──best leads──▶ @writer ──draft ids──▶ @reviewer
+      ▲                    │                (web research,           (intro / referral /     (opens every source,
+      └──── say + buttons ─┘◀─────────────── graph, warm paths)       cold sequences)         pass or fix → @writer)
+```
+
+- **@planner** is the only agent that calls `wait_for_task`, so tasks are never picked up twice. It saves the ICP, decides who works next, and reports to the founder with `say` + page buttons.
+- **@scout** researches and writes to the graph (companies, people, signals, contacts, people to meet), every record with a source.
+- **@writer** drafts with `draft_outreach`; every factual sentence carries a claim + URL.
+- **@reviewer** is independent of the writer: it fetches each claim's source, then `review_draft` pass/fix. A fix goes back to @writer; a pass goes to @planner.
+
+Every step is tagged with its agent in the app's thinking feed and the audit log, and the Band room keeps the readable record of each hand-off. Instructions live in `agents/planner.md`, `scout.md`, `writer.md`, `reviewer.md`; the agents were created with `band agent create --transport claude-code-cli --instructions-file agents/<role>.md`.

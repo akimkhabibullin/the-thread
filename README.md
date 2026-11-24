@@ -36,6 +36,10 @@ Without keys the app still works: emails are skipped without a Hunter key, and u
 6. You approve, edit or reject each draft on the Outreach page. Rejections with a pattern lead to a suggested profile change.
 7. You move leads across the Pipeline board. Meetings and closed deals join your network, and a closed deal triggers a referral ask.
 
+## Multi-agent mode (Band)
+
+Instead of one `/thread` session, run four Claude Code agents in a [Band](https://docs.band.ai) room: @planner (reads the app's tasks and coordinates), @scout (research and the graph), @writer (outreach) and @reviewer (checks every claim's source). Their instructions are in `agents/`. Install Band Desktop, create the agents with `band agent create --transport claude-code-cli --cwd <this folder> --instructions-file agents/<role>.md`, add them to a room and @mention the planner to start. Run either Band or `/thread`, not both. Details in [ARCHITECTURE.md](ARCHITECTURE.md#multi-agent-with-band).
+
 ## Demo snapshot
 
 To see a finished run without waiting for the agent: open the menu → **Load demo snapshot**. **Save demo snapshot** in the same menu stores the current state to `data/demo-snapshot.json`.
