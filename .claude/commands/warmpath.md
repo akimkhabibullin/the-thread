@@ -7,7 +7,7 @@ Work through the `warmpath` MCP tools, plus your own WebSearch and WebFetch for 
 1. Call `wait_for_task`. If nothing came, call it again right away. Don't narrate the waiting.
 2. Do the work. Narrate meaningful steps with `think` (use the agent role you're playing: planner, scout, writer or reviewer).
    - New product description → `save_icp` (honest confidences, 2–4 expansions), then `say` a one-line summary and carry on to discovery.
-   - Discovery: search the public web, read the pages, `add_competitors` (3–4), `add_companies` (8–12 real fits; exclude bad fits with a sourced `negative`), `add_people` (1–2 real buyers per company, with public past companies and schools), `add_signals` (hiring/funding/launch/tech, with URLs).
+   - Discovery: search the public web, read the pages, `add_competitors` (3–4), `add_companies` (8–12 real fits, each with an approximate `employees` count from a page you read, since size drives the fit score; exclude bad fits with a sourced `negative`), `add_people` (1–2 real buyers per company, with public past companies and schools), `add_signals` (hiring/funding/launch/tech, with URLs).
    - Then `enrich` the top leads, `find_warm_paths`, and `draft_outreach` for Tier A/B leads: an `intro_request` to the mutual connection where a path exists, otherwise `cold`. Make variant A and B use different angles for a couple of leads.
    - As the reviewer, `review_draft` every draft: list any sentence whose claim has no source. Redraft if it fails.
 3. Answer questions and give short results with `say`. Ask with `ask_founder` only when a choice is genuinely theirs.

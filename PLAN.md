@@ -71,11 +71,53 @@ Tonight (≈ 9:45 PM → 12:30 AM): core loop working end to end, ugly is fine.
 7. [ ] First real run with Claude Code (`/warmpath`) on Director: tune the prompt/tools from what goes wrong.
 8. [ ] Hunter key in `.env`, test enrichment on 2–3 leads.
 
-Tomorrow 11:00–12:00: proof score + Reviewer, learning from rejections, animated graph view.
-Tomorrow 13:00–14:00: Flexprice meters + credits, Neo4j mirror + Cypher queries, Band room with 4 agents.
-Tomorrow 14:00–14:45: analytics (industry/tier conversion, A/B), voice intake (from Director), polish.
-Tomorrow 14:45–15:30: demo video (2–3 min), README setup, ARCHITECTURE.md, Snyk, push, submit.
-Cut first if late: wow teaser → voice → Band → Neo4j mirror (in-memory graph still answers the queries).
+7–8 moved into today's plan below.
+
+## Today (Nov 24): step by step
+**Step 0 · Get in (by 9:55).** AWS Builder registration done, photo ID, laptop + charger. At the venue: `npm run dev`, check the app loads and the demo snapshot loads.
+
+**Step 1 · Fix what the first run exposed (≈10:15–11:00)**
+- [ ] Scoring: renormalize when company size is unknown; prompt the agent to record headcount + source → Tier A reachable.
+- [ ] Real `Connections.csv` uploaded (or label the sample network clearly as a sample).
+- [ ] Hunter key in `.env`; enrich 2–3 leads; add a domain-search fallback to find named buyers.
+- [ ] Redraft the flagged Customer.io email so the reviewer passes it.
+
+**Step 1.5 · Visual identity (≈11:00–11:45). As important as the features: judges see it first.**
+- [ ] Pick one direction and apply it everywhere: display font for headings, tighter type scale, one signature colour for "warm" (paths, intro requests), calm neutrals for everything else.
+- [ ] Hero screens get real design attention (they're what's in the video): intake + ICP, Leads with path chips, the warm-path graph, a draft with proof underlines.
+- [ ] Motion: cards slide in as the agent adds them, the Thinking feed streams, score counts up, the path draws itself.
+- [ ] Empty states that sell the idea ("Your next customer is two people away. Drop your LinkedIn export →").
+- [ ] Check at 1440 and 1280 wide, light + dark.
+
+**Step 2 · The wow (≈11:45–12:30)**
+- [ ] Animated warm-path graph (You → contact → buyer), on the Network tab and in each lead row.
+- [ ] Learning from rejections on real data: reject 2 leads in one industry → ICP-change card → accept → ICP updates.
+- [ ] Fresh full run with `/warmpath`, save as the new demo snapshot.
+
+Lunch ≈12:00–13:00. Commit + push to GitHub before eating (safety copy).
+
+**Step 3 · Bonuses (≈13:00–14:00), +20% each**
+- [ ] Flexprice: account, 3 meters, verify the events endpoint, credits tick down in the top bar.
+- [ ] Band: room with @planner / @scout / @writer / @reviewer handing off; record a clip of it.
+- [ ] Neo4j Aura mirror + the 3 Cypher queries (skip if short on time: the in-memory graph already answers them).
+
+**Step 4 · Polish (≈14:00–14:45)**
+- [ ] Voice intake (port from Director).
+- [ ] Insights with labelled demo data (A/B, warm vs cold); empty states; dark mode check.
+- [ ] Snyk: `snyk test` + `snyk code test`, fix highs, paste results in README.
+
+**Step 5 · Ship (≈14:45–15:30)**
+- [ ] Load the demo snapshot, rehearse the demo script once.
+- [ ] Record the 2–3 min video.
+- [ ] README (setup), ARCHITECTURE.md (diagram + modules → brief), public GitHub repo, submit.
+
+**Wildcard (only if time, or if another team is building the same thing):** one surprise feature at the end.
+Ideas, best first: (1) each intro request comes with a 5-second personalised motion teaser made in Director
+(the founder's own product doing the outreach); (2) "super-connectors": which of your contacts unlock the most
+buyers, ranked; (3) spoken morning briefing ("3 new warm paths since yesterday").
+
+Cut first if late: wildcard / wow teaser → voice → Band → Neo4j mirror (in-memory graph still answers the queries).
+Never cut: steps 1, 5, and a saved demo snapshot.
 
 ## Accounts / keys (tonight) → `.env`
 - [ ] AWS Builder portal registration for the venue (required to get in) + physical ID, arrive by 9:55

@@ -51,6 +51,8 @@ export function scoreLead(p: Person, c: Company | undefined, icp: ICP | null, si
     const sen = (p.seniority ?? p.title).toLowerCase();
     if (/(head|director|vp|chief|founder|lead|manager)/.test(sen)) { fit += 10; reasons.push('Decision-maker seniority'); }
   }
+  // Unknown headcount shouldn't punish a lead: rescale fit to the 45 points we could actually judge.
+  if (icp && c && c.employees == null) { fit = Math.round((fit * 60) / 45); reasons.push('Size unknown: fit judged on industry, title and seniority'); }
   for (const s of signals.slice(0, 3)) { intent += s.kind === 'hiring' || s.kind === 'funding' ? 10 : 6; reasons.push(`Signal: ${s.text}`); }
   intent = Math.min(25, intent);
   const warm = Math.round((paths[0]?.strength ?? 0) * 15);

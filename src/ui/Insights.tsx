@@ -1,20 +1,22 @@
-// Module 5 analytics + competitors + the audit log (who did what: AI or founder).
+// Step 07: what is working. Conversion by tier and industry, A/B, warm vs cold, competitors, and the audit log.
+import {useState} from 'react';
 import {useLink} from '../link';
 import {leads, LeadView} from '../../shared/logic';
 import {Stage} from '../../shared/types';
-import {Sources} from './Leads';
+import {PageHead} from './Chrome';
+import {Num, Sources} from './Leads';
 
 const REACHED: Record<Stage, number> = {matched: 0, contacted: 1, replied: 2, meeting: 3, closed: 4, lost: 1};
+const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '–');
 function Funnel({title, groups}: {title: string; groups: [string, LeadView[]][]}) {
   return (
-    <div className="card">
+    <div className="stat-block">
       <h3>{title}</h3>
       <table className="mini">
         <thead><tr><th></th><th>Leads</th><th>Contacted</th><th>Replied</th><th>Meeting</th><th>Won</th></tr></thead>
         <tbody>{groups.map(([k, ls]) => {
           const n = (lvl: number) => ls.filter((l) => REACHED[l.person.stage] >= lvl).length;
-          const pct = (a: number, b: number) => (b ? `${Math.round((a / b) * 100)}%` : '–');
-          return <tr key={k}><td>{k}</td><td>{ls.length}</td><td>{n(1)}</td><td>{n(2)} <span className="muted">{pct(n(2), n(1))}</span></td><td>{n(3)}</td><td>{n(4)}</td></tr>;
+          return <tr key={k}><td>{k}</td><td>{ls.length}</td><td>{n(1)}</td><td>{n(2)} <span className="quiet">{pct(n(2), n(1))}</span></td><td>{n(3)}</td><td>{n(4)}</td></tr>;
         })}</tbody>
       </table>
     </div>
@@ -24,42 +26,59 @@ const group = <T,>(xs: T[], key: (x: T) => string) => { const m = new Map<string
 
 export function InsightsView() {
   const {db} = useLink();
+  const [allAudit, setAllAudit] = useState(false);
   const L = leads(db).filter((l) => !l.excluded);
+  const stageOf = (pid: string) => REACHED[db.people.find((p) => p.id === pid)?.stage ?? 'matched'];
   const variants = (['A', 'B'] as const).map((v) => {
     const ds = db.drafts.filter((d) => d.variant === v);
     const approved = ds.filter((d) => d.status === 'approved');
-    const replied = approved.filter((d) => REACHED[db.people.find((p) => p.id === d.personId)?.stage ?? 'matched'] >= 2);
-    return {v, drafted: ds.length, approved: approved.length, replied: replied.length, angles: [...new Set(ds.map((d) => d.angle))].slice(0, 3)};
+    return {v, drafted: ds.length, approved: approved.length, replied: approved.filter((d) => stageOf(d.personId) >= 2).length, angles: [...new Set(ds.map((d) => d.angle))].slice(0, 3)};
   });
   const kinds = (['intro_request', 'cold'] as const).map((k) => {
     const ap = db.drafts.filter((d) => d.kind === k && d.status === 'approved');
-    return {k, approved: ap.length, replied: ap.filter((d) => REACHED[db.people.find((p) => p.id === d.personId)?.stage ?? 'matched'] >= 2).length};
+    return {k, approved: ap.length, replied: ap.filter((d) => stageOf(d.personId) >= 2).length};
   });
+  const [warm, cold] = kinds;
+  const audit = [...db.audit].reverse();
+  const approvedN = warm.approved + cold.approved, repliedN = warm.replied + cold.replied;
   return (
     <div className="insights">
-      <div className="grid2">
-        <Funnel title="Conversion by tier" groups={group(L, (l) => `Tier ${l.tier}`).sort()} />
-        <Funnel title="Conversion by industry" groups={group(L, (l) => l.company?.industry ?? 'unknown')} />
-        <div className="card"><h3>A/B variants</h3>
-          <table className="mini"><thead><tr><th></th><th>Drafted</th><th>Approved</th><th>Replied</th><th>Angles</th></tr></thead>
-            <tbody>{variants.map((x) => <tr key={x.v}><td>{x.v}</td><td>{x.drafted}</td><td>{x.approved}</td><td>{x.replied}</td><td className="muted small">{x.angles.join(' · ')}</td></tr>)}</tbody></table>
+      <PageHead title="Insights" lede="What is working, and everything that happened, with who did it." />
+      <div className="numbers">
+        <div className="number-row"><Num n={db.drafts.length} /><p>drafts written, {db.drafts.filter((d) => d.kind === 'intro_request').length} of them intro requests through someone you know.</p></div>
+        <div className="number-row"><Num n={approvedN} /><p>approved by you and queued. {db.drafts.filter((d) => d.status === 'rejected').length} rejected, and the agent learns from why.</p></div>
+        <div className="number-row"><Num n={repliedN} /><p>{repliedN === 1 ? 'reply' : 'replies'} so far. {warm.approved || cold.approved ? <>Warm intros {pct(warm.replied, warm.approved)}, cold emails {pct(cold.replied, cold.approved)}.</> : 'Reply rates show up once something is queued.'}</p></div>
+      </div>
+      <div className="two">
+        <Funnel title="By tier" groups={group(L, (l) => `Tier ${l.tier}`).sort()} />
+        <Funnel title="By industry" groups={group(L, (l) => l.company?.industry ?? 'Unknown')} />
+        <div className="stat-block"><h3>A/B variants</h3>
+          <table className="mini"><thead><tr><th></th><th>Drafted</th><th>Approved</th><th>Replied</th></tr></thead>
+            <tbody>{variants.map((x) => <tr key={x.v}><td>{x.v}<div className="quiet small">{x.angles.join(' · ')}</div></td><td>{x.drafted}</td><td>{x.approved}</td><td>{x.replied}</td></tr>)}</tbody></table>
         </div>
-        <div className="card"><h3>Warm vs cold</h3>
-          <table className="mini"><thead><tr><th></th><th>Queued</th><th>Replied</th><th>Reply rate</th></tr></thead>
-            <tbody>{kinds.map((x) => <tr key={x.k}><td>{x.k === 'intro_request' ? 'Intro requests' : 'Cold'}</td><td>{x.approved}</td><td>{x.replied}</td><td>{x.approved ? `${Math.round((x.replied / x.approved) * 100)}%` : '–'}</td></tr>)}</tbody></table>
+        <div className="stat-block"><h3>Warm vs cold</h3>
+          <table className="mini"><thead><tr><th></th><th>Queued</th><th>Replied</th><th>Rate</th></tr></thead>
+            <tbody>{kinds.map((x) => <tr key={x.k}><td>{x.k === 'intro_request' ? 'Intro requests' : 'Cold'}</td><td>{x.approved}</td><td>{x.replied}</td><td>{pct(x.replied, x.approved)}</td></tr>)}</tbody></table>
         </div>
       </div>
-      <h3>Competitors</h3>
-      <div className="grid3">{db.competitors.map((c) => (
-        <div key={c.id} className="card"><div className="row-between"><b>{c.name}</b><Sources s={c.sources} /></div>
-          <div className="small">{c.positioning}</div><div className="small muted">Pricing: {c.pricing}</div>
-          <ul className="small">{c.differentiators.map((d, i) => <li key={i}>{d}</li>)}</ul></div>))}
-        {!db.competitors.length && <div className="muted">None yet.</div>}
+
+      <h2 className="center section-title">Competitors</h2>
+      <div className="competitors">{db.competitors.map((c) => (
+        <div key={c.id} className="comp">
+          <h3>{c.name}</h3>
+          <p>{c.positioning}</p>
+          <p className="quiet small">Pricing: {c.pricing}</p>
+          <ul className="small">{c.differentiators.map((d, i) => <li key={i}>{d}</li>)}</ul>
+          <div className="small">Sources <Sources s={c.sources} /></div>
+        </div>))}
+        {!db.competitors.length && <p className="quiet center">None yet.</p>}
       </div>
-      <h3>Audit log</h3>
-      <div className="audit">{[...db.audit].reverse().slice(0, 200).map((a, i) => (
-        <div key={i} className="arow"><span className="t">{new Date(a.at).toLocaleTimeString()}</span><span className={`by ${a.actor}`}>{a.actor === 'ai' ? `AI${a.agent ? ` · ${a.agent}` : ''}` : 'Founder'}</span><span>{a.action}{a.target && <b> {a.target}</b>}{a.detail && <span className="muted"> · {a.detail}</span>}</span></div>))}
+
+      <h2 className="center section-title">Audit log</h2>
+      <div className="audit">{audit.slice(0, allAudit ? 200 : 12).map((a, i) => (
+        <div key={i} className="arow"><span className="t">{new Date(a.at).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})}</span><span className={`by ${a.actor}`}>{a.actor === 'ai' ? `Agent${a.agent ? ` · ${a.agent}` : ''}` : 'You'}</span><span>{a.action}{a.target && <b> {a.target}</b>}{a.detail && <span className="quiet"> · {a.detail}</span>}</span></div>))}
       </div>
+      {audit.length > 12 && <div className="center mt"><button className="pill" onClick={() => setAllAudit(!allAudit)}>{allAudit ? 'Show less' : `Show all ${Math.min(audit.length, 200)}`}</button></div>}
     </div>
   );
 }

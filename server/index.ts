@@ -167,7 +167,7 @@ function makeServer() {
   mcp.registerTool('add_companies', {
     description: 'Add target companies found on the public web. Set negative (with a source) to exclude a bad fit, e.g. recent layoffs, already a competitor customer, wrong segment.',
     inputSchema: z.object({companies: z.array(z.object({
-      name: z.string(), domain: z.string().optional(), industry: z.string().optional(), naics: z.string().optional(), employees: z.number().optional(), hq: z.string().optional(),
+      name: z.string(), domain: z.string().optional(), industry: z.string().optional(), naics: z.string().optional(), employees: z.number().optional().describe('approximate headcount; look it up (LinkedIn company page, Crunchbase, About page) and include that page in sources'), hq: z.string().optional(),
       why: z.string().describe('why it fits the ICP, one sentence'), sources: src,
       negative: z.object({reason: z.string(), sources: src}).optional(),
     })), agent: z.string().default('scout')}),
