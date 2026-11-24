@@ -14,7 +14,7 @@ import * as z from 'zod/v4';
 import {Actor, Company, Contact, DB, emptyDB, Person, Stage, STAGES, uid} from '../shared/types';
 import {leads, norm, parseConnections, proofScore, sameOrg, superConnectors} from '../shared/logic';
 import {enrichPerson} from './hunter';
-import {meter} from './meter';
+import {flexpriceStatus, initFlexprice, meter} from './meter';
 
 const PORT = Number(process.env.PORT ?? 5299);
 const DATA = join(process.cwd(), 'data');
@@ -369,7 +369,7 @@ app.post('/api/demo/load', (_req, res) => {
   db = {...emptyDB(), ...JSON.parse(readFileSync(DEMO_FILE, 'utf8'))}; changed(); res.json({ok: true});
 });
 app.post('/api/reset', (_req, res) => { const keep = db.founder; db = emptyDB(Number(process.env.CREDITS ?? 50)); db.founder = keep; changed(); res.json({ok: true}); });
-app.get('/api/health', (_req, res) => { res.json({ok: true, clients: clients.size, agentSeenSecondsAgo: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, hunter: !!process.env.HUNTER_API_KEY, flexprice: !!process.env.FLEXPRICE_API_KEY}); });
+app.get('/api/health', (_req, res) => { res.json({ok: true, clients: clients.size, agentSeenSecondsAgo: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, hunter: !!process.env.HUNTER_API_KEY, flexprice: flexpriceStatus}); });
 
 /** Every deal grows the network: someone you met or closed becomes a node that can open paths to their colleagues and ex-colleagues. */
 function growNetwork(p: Person, st: Stage) {
@@ -464,4 +464,5 @@ wss.on('connection', (w) => {
   w.on('close', () => clients.delete(w));
 });
 setInterval(() => { if (lastAgentAt && Date.now() - lastAgentAt > 150_000 && !waiter) status('offline'); }, 15_000);
+void initFlexprice(db.founder.name);
 http.listen(PORT, '127.0.0.1', () => console.log(`[thread] bridge on http://127.0.0.1:${PORT}  (MCP: /mcp, app: /ws)  hunter:${!!process.env.HUNTER_API_KEY} flexprice:${!!process.env.FLEXPRICE_API_KEY}`));
