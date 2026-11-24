@@ -1,11 +1,14 @@
 // Step 04: the founder's own network. A dark band with the warm paths, then the file, the background, and contacts that need a company.
 import {useEffect, useState} from 'react';
 import {post, sendWs, useLink} from '../link';
-import {leads} from '../../shared/logic';
+import {leads, superConnectors} from '../../shared/logic';
 import type {Contact} from '../../shared/types';
 import {Hops, Tier} from './Leads';
 
 const list = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean);
+const MEET = 'Find 3–5 people I should get to know this week who sit next to several of my buyers (community hosts, recruiters, ex-employees, podcast hosts). Use graph_query super_connectors first, then suggest_connectors with sources.';
+const OriginTag = ({c}: {c: Contact}) => c.origin === 'customer' ? <span className="otag customer">customer</span> : c.origin === 'met' ? <span className="otag">met</span> : null;
+const host = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ''); } catch { return u; } };
 const LOOKUP = 'Look up the current company and title of my connections that have none, starting with the ones most likely to matter for my ICP. Use update_contacts with sources.';
 
 function NeedsRow({c}: {c: Contact}) {
@@ -24,12 +27,14 @@ function NeedsRow({c}: {c: Contact}) {
 export function NetworkView() {
   const {db, status, connected} = useLink();
   const f = db.founder;
-  const [name, setName] = useState(f.name), [schools, setSchools] = useState(f.schools.join(', ')), [past, setPast] = useState(f.pastCompanies.join(', '));
+  const [name, setName] = useState(f.name), [schools, setSchools] = useState(f.schools.join(', ')), [past, setPast] = useState(f.pastCompanies.join(', ')), [comms, setComms] = useState((f.communities ?? []).join(', '));
   const [msg, setMsg] = useState(''), [asked, setAsked] = useState(false), [showAll, setShowAll] = useState(false);
-  useEffect(() => { setName(f.name); setSchools(f.schools.join(', ')); setPast(f.pastCompanies.join(', ')); }, [f.name, f.schools.join(), f.pastCompanies.join()]);
-  const saveBg = () => post('/api/network', {name, schools: list(schools), pastCompanies: list(past)}).then(() => setMsg('Saved.'));
+  useEffect(() => { setName(f.name); setSchools(f.schools.join(', ')); setPast(f.pastCompanies.join(', ')); setComms((f.communities ?? []).join(', ')); }, [f.name, f.schools.join(), f.pastCompanies.join(), (f.communities ?? []).join()]);
+  const [askedMeet, setAskedMeet] = useState(false);
+  useEffect(() => { const a = location.hash.split('#')[2]; if (a) setTimeout(() => document.getElementById(a)?.scrollIntoView({behavior: 'smooth', block: 'start'}), 100); }, []);
+  const saveBg = () => post('/api/network', {name, schools: list(schools), pastCompanies: list(past), communities: list(comms)}).then(() => setMsg('Saved.'));
   const upload = async (file: File) => {
-    const r = await post('/api/network', {csv: await file.text(), fileName: file.name, name, schools: list(schools), pastCompanies: list(past)});
+    const r = await post('/api/network', {csv: await file.text(), fileName: file.name, name, schools: list(schools), pastCompanies: list(past), communities: list(comms)});
     setMsg(r.error ?? `Imported ${r.added} connections.`);
   };
   const warm = leads(db).filter((l) => l.paths.length);
@@ -38,6 +43,11 @@ export function NetworkView() {
   const byAgent = f.network.filter((c) => c.companySource && c.companySource !== 'founder').length;
   const companies = new Set(withCo.map((c) => c.company)).size;
   const agentOn = connected && status !== 'offline';
+  const deals = f.network.filter((c) => c.origin === 'customer' || c.origin === 'met');
+  const moves = [...(db.moves ?? [])].sort((a, b) => b.at - a.at);
+  const supers = superConnectors(db).slice(0, 5);
+  const toMeet = (db.connectors ?? []).filter((c) => c.status === 'open');
+  const targetName = (id?: string) => db.companies.find((c) => c.id === id)?.name;
   return (
     <div className="network">
       <section className="net-band">
@@ -55,10 +65,53 @@ export function NetworkView() {
           <div className="net-stats">
             <div><span className="big">{f.network.length}<i>.</i></span>connections</div>
             <div><span className="big">{companies}<i>.</i></span>companies</div>
+            <div><span className="big">{deals.length}<i>.</i></span>from your deals</div>
             <div><span className="big">{needs.length}<i>.</i></span>need a company</div>
           </div>
+          {deals.length > 0 && <p className="deal-line">From your deals: {deals.map((c, i) => <span key={c.id}>{i > 0 && ', '}{c.name} <OriginTag c={c} /></span>)}</p>}
         </div>
       </section>
+
+      <section className="meet" id="meet">
+        <div className="meet-head">
+          <h2>People to meet this week</h2>
+          <p className="quiet">Every deal grows your network, and so does one good coffee. These are the people who sit next to several of your buyers.</p>
+          <div className="pills"><button className="pill solid" onClick={() => { sendWs({type: 'task', kind: 'chat', text: MEET}); setAskedMeet(true); }}>Find people to meet</button>
+            {askedMeet && <span className="quiet small">{agentOn ? 'Asked the agent. Suggestions appear here.' : 'Queued. It starts when the agent is running.'}</span>}</div>
+        </div>
+        {supers.length > 0 && <div className="supers">
+          <h3>Your super-connectors</h3>
+          {supers.map(({contact: c, leads: ls}) => (
+            <div key={c.id} className="super-row">
+              <span className="sr-name">{c.name} <OriginTag c={c} /></span>
+              <span className="quiet">{[c.position, c.company].filter(Boolean).join(', ')}</span>
+              <span>opens <b>{ls.length}</b> {ls.length === 1 ? 'lead' : 'leads'}: {ls.slice(0, 3).join(', ')}{ls.length > 3 ? '…' : ''}</span>
+            </div>))}
+        </div>}
+        {toMeet.length > 0 && <div className="connectors">{toMeet.map((c) => (
+          <div key={c.id} className="connector">
+            <div className="who">{c.company}</div>
+            <h3>{c.name}</h3>
+            <div className="quiet small">{c.title}</div>
+            <p>{c.why}</p>
+            {c.unlocks.length > 0 && <p className="small"><span className="quiet">Could open:</span> {c.unlocks.join(', ')}</p>}
+            {c.sources.length > 0 && <p className="small quiet">{c.sources.map((x, i) => <a key={i} className="u" href={x.url} target="_blank" rel="noreferrer">{x.title ?? host(x.url)}</a>).reduce<React.ReactNode[]>((a, el, i) => (i ? [...a, ' · ', el] : [el]), [])}</p>}
+            <div className="pills"><button className="pill sm solid" onClick={() => sendWs({type: 'connector', id: c.id, action: 'done'})}>I've met them</button><button className="link" onClick={() => sendWs({type: 'connector', id: c.id, action: 'dismissed'})}>Not now</button></div>
+          </div>))}
+        </div>}
+        {!supers.length && !toMeet.length && <p className="quiet">No suggestions yet. Ask the agent to find some.</p>}
+      </section>
+
+      {moves.length > 0 && <section className="moves" id="moves">
+        <h2>Moves</h2>
+        <p className="quiet">Your connections changing jobs. A move into a company you want is a fresh way in.</p>
+        {moves.map((m, i) => (
+          <div key={i} className={`move ${m.intoTarget ? 'target' : ''}`}>
+            <span className="mv-name">{m.name}</span>
+            <span className="mv-to">→ {m.to}{m.position && `, ${m.position}`}{m.intoTarget && <span className="joined">target company</span>}</span>
+            <span className="quiet small">from {m.from || 'unknown'} · {new Date(m.at).toLocaleDateString([], {month: 'short', day: 'numeric'})} · <a className="u" href={m.source} target="_blank" rel="noreferrer">{host(m.source)}</a></span>
+          </div>))}
+      </section>}
 
       <section className="net-setup">
         <div className="paper-wrap"><div className="paper-back" />
@@ -76,6 +129,7 @@ export function NetworkView() {
           <label className="lbl">Your name<input value={name} onChange={(e) => setName(e.target.value)} placeholder="Akim" /></label>
           <label className="lbl">Schools<input value={schools} onChange={(e) => setSchools(e.target.value)} placeholder="Northeastern University" /></label>
           <label className="lbl">Past companies<input value={past} onChange={(e) => setPast(e.target.value)} placeholder="Comma separated" /></label>
+          <label className="lbl">Communities, accelerators, events, podcasts<input value={comms} onChange={(e) => setComms(e.target.value)} placeholder="e.g. YC W24, Lenny's community, Config 2025" /></label>
           <div className="pills"><button className="pill solid" onClick={saveBg}>Save</button><span className="quiet small">{msg}</span></div>
         </div>
       </section>

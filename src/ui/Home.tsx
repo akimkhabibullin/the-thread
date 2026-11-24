@@ -87,6 +87,17 @@ export function Home({onMenu}: {onMenu: () => void}) {
         Where there is a warm path, it writes a short note to your connection with a blurb they can paste. Every factual line is underlined and linked to its source; a second reviewer checks them. You approve, edit or reject. Rejections teach it.
       </Feature>
 
+      <section className="grows">
+        <h2 className="feature-title">Every deal grows<br />your network<span className="red">.</span></h2>
+        <div className="grows-grid">
+          <div><h3>Referrals</h3><p>Close a deal and your new customer joins your network. The agent drafts a short ask for one or two intros to people they know.</p></div>
+          <div><h3>Job changes</h3><p>When a connection moves to a company you want, you hear about it, with the source. Old friends at new places are the warmest way in.</p></div>
+          <div><h3>Communities</h3><p>Accelerators, events, podcasts, communities. A shared one counts as a path, even if you never connected on LinkedIn.</p></div>
+          <div><h3>People to meet</h3><p>Each week it suggests a few people who sit next to several of your buyers. Meet one and they open the rest.</p></div>
+        </div>
+        <div className="center"><a className="pill" href={href('network')}>See your network</a></div>
+      </section>
+
       {top.length > 0 && <section className="band">
         <h2>From your last run</h2>
         <div className="cards">{top.map((l) => (

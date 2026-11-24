@@ -1,5 +1,6 @@
 // Pure, explainable logic shared by the bridge and the UI: name matching, warm paths, fit & intent score, CSV import.
 import type {Company, Contact, DB, Founder, ICP, Person, Signal, WarmPath} from './types';
+const who = (c: Contact) => c.origin === 'customer' ? 'your customer' : c.origin === 'met' ? 'someone you met through a deal' : 'your connection';
 
 /* ---------- matching ---------- */
 const SUFFIX = /\b(inc|llc|ltd|corp|corporation|co|company|gmbh|plc|technologies|technology|labs|hq|the)\b/g;
@@ -20,14 +21,16 @@ export function warmPaths(person: Person, company: Company | undefined, founder:
   const me = founder.name || 'You';
   if (company) for (const c of founder.network) if (sameOrg(c.company, company.name) && c.name !== person.name)
     out.push({kind: 'colleague', strength: 1, viaContactId: c.id, hops: [me, c.name, person.name],
-      text: `${c.name} (your connection, ${c.position || 'works'} at ${c.company}) works with ${person.name}.`});
+      text: `${c.name} (${who(c)}, ${c.position || 'works'} at ${c.company}) works with ${person.name}.`});
   for (const past of person.pastCompanies) for (const c of founder.network) if (sameOrg(c.company, past))
     out.push({kind: 'former_colleague', strength: 0.6, viaContactId: c.id, hops: [me, c.name, person.name],
-      text: `${c.name} (your connection) is at ${c.company}, where ${person.name} used to work.`});
+      text: `${c.name} (${who(c)}) is at ${c.company}, where ${person.name} used to work.`});
   for (const past of founder.pastCompanies) if (person.pastCompanies.some((p) => sameOrg(p, past)) || (company && sameOrg(company.name, past)))
     out.push({kind: 'shared_employer', strength: 0.4, hops: [me, past, person.name], text: `You and ${person.name} both worked at ${past}.`});
   for (const s of founder.schools) if (person.schools.some((p) => sameOrg(p, s)))
     out.push({kind: 'shared_school', strength: 0.35, hops: [me, s, person.name], text: `You and ${person.name} both went to ${s}.`});
+  for (const s of founder.communities ?? []) if ((person.communities ?? []).some((p) => sameOrg(p, s)))
+    out.push({kind: 'shared_community', strength: 0.3, hops: [me, s, person.name], text: `You and ${person.name} are both part of ${s}.`});
   const seen = new Set<string>();
   return out.sort((a, b) => b.strength - a.strength).filter((p) => { const k = p.kind + (p.viaContactId ?? p.hops[1]); if (seen.has(k)) return false; seen.add(k); return true; });
 }
@@ -61,6 +64,19 @@ export function scoreLead(p: Person, c: Company | undefined, icp: ICP | null, si
   let excluded: string | undefined;
   if (c?.negative) { excluded = c.negative.reason; score = Math.min(score, 20); reasons.unshift(`Negative signal: ${c.negative.reason}`); }
   return {score, tier: score >= 75 ? 'A' : score >= 50 ? 'B' : 'C', fit, intent, warm, reasons, excluded};
+}
+
+/** Connections ranked by how many leads their path opens: your super-connectors. */
+export function superConnectors(db: DB) {
+  const m = new Map<string, {contact: Contact; leads: string[]}>();
+  for (const l of leads(db)) if (!l.excluded) for (const p of l.paths) if (p.viaContactId) {
+    const c = db.founder.network.find((x) => x.id === p.viaContactId);
+    if (!c) continue;
+    const e = m.get(c.id) ?? {contact: c, leads: []};
+    if (!e.leads.includes(l.person.name)) e.leads.push(l.person.name);
+    m.set(c.id, e);
+  }
+  return [...m.values()].sort((a, b) => b.leads.length - a.leads.length);
 }
 
 export type LeadView = {person: Person; company?: Company; signals: Signal[]; paths: WarmPath[]} & Score;

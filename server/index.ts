@@ -11,8 +11,8 @@ import {NodeStreamableHTTPServerTransport} from '@modelcontextprotocol/node';
 import {McpServer} from '@modelcontextprotocol/server';
 import {WebSocketServer, WebSocket} from 'ws';
 import * as z from 'zod/v4';
-import {Actor, Company, DB, emptyDB, Person, Stage, STAGES, uid} from '../shared/types';
-import {leads, norm, parseConnections, proofScore, sameOrg} from '../shared/logic';
+import {Actor, Company, Contact, DB, emptyDB, Person, Stage, STAGES, uid} from '../shared/types';
+import {leads, norm, parseConnections, proofScore, sameOrg, superConnectors} from '../shared/logic';
 import {enrichPerson} from './hunter';
 import {meter} from './meter';
 
@@ -190,7 +190,9 @@ function makeServer() {
     description: 'Add role-matched buyers at saved companies (company = id, name or domain). Include public past companies and schools: they power warm paths.',
     inputSchema: z.object({people: z.array(z.object({
       name: z.string(), title: z.string(), seniority: z.string().optional(), company: z.string(), linkedin: z.string().optional(),
-      pastCompanies: z.array(z.string()).default([]), schools: z.array(z.string()).default([]), sources: src,
+      pastCompanies: z.array(z.string()).default([]), schools: z.array(z.string()).default([]),
+      communities: z.array(z.string()).optional().describe('public shared contexts beyond LinkedIn: communities, accelerators, events they spoke at, podcasts, open-source projects (each must be on one of the sources)'),
+      sources: src,
     })), agent: z.string().default('scout')}),
   }, async ({people, agent}) => {
     const out: string[] = [], missing: string[] = [];
@@ -253,23 +255,40 @@ function makeServer() {
     description: "Fill in where the founder's connections work now, from a public page you actually read (their public profile, a team page, a talk bio). Never guess; skip anyone you can't source.",
     inputSchema: z.object({contacts: z.array(z.object({id: z.string(), company: z.string(), position: z.string().optional(), source_url: z.string()}))}),
   }, async ({contacts}) => {
-    let n = 0;
+    let n = 0; const moves: string[] = [];
     for (const u of contacts) {
       const c = db.founder.network.find((x) => x.id === u.id);
       if (!c || !/^https?:\/\//.test(u.source_url)) continue;
+      const from = c.company;
       c.company = u.company; if (u.position) c.position = u.position; c.companySource = u.source_url; n++;
+      if (from && !sameOrg(from, u.company)) moves.push(recordMove(c, from, u.source_url));
     }
-    audit('ai', 'looked up connections', undefined, `${n} updated`);
-    return ok(`Updated ${n} connections. Run find_warm_paths to see new paths.`);
+    audit('ai', 'looked up connections', undefined, `${n} updated${moves.length ? `, ${moves.length} changed jobs` : ''}`);
+    return ok(`Updated ${n} connections.${moves.length ? ` Job changes: ${moves.join('; ')}.` : ''} Run find_warm_paths to see new paths.`);
+  });
+
+  mcp.registerTool('suggest_connectors', {
+    description: "Suggest 3–5 people the founder should get to know this week: not buyers, but people next to several buyers on the list (a design-community host, a recruiter or ex-employee who knows the brand teams, a podcast host who interviewed them). Each needs a source showing why they're close to those buyers.",
+    inputSchema: z.object({connectors: z.array(z.object({name: z.string(), title: z.string(), company: z.string(), why: z.string().describe('one sentence: why they are close to these buyers'), unlocks: z.array(z.string()).describe('company or buyer names they could open'), sources: src})), agent: z.string().default('scout')}),
+  }, async ({connectors, agent}) => {
+    for (const c of connectors) {
+      const ex = db.connectors.find((x) => norm(x.name) === norm(c.name));
+      if (ex) Object.assign(ex, c); else db.connectors.push({id: uid('k'), ...c, status: 'open', at: Date.now()});
+    }
+    think(agent, `Suggested ${connectors.length} people to meet`, connectors.map((c) => c.name).join(', '));
+    audit('ai', 'suggested people to meet', undefined, connectors.map((c) => c.name).join(', '), agent);
+    return ok(`Saved ${connectors.length}. They show on the Network page under "People to meet".`);
   });
 
   mcp.registerTool('graph_query', {
-    description: 'Run a named multi-hop query over the knowledge graph: warm_paths (Founder→knows→Person→works_at→Company←matched_to), hiring_signals (Signal[hiring]→Company→Person matching a persona), competitor_displacement (Company uses a Competitor → its buyers).',
-    inputSchema: z.object({name: z.enum(['warm_paths', 'hiring_signals', 'competitor_displacement'])}),
+    description: 'Run a named multi-hop query over the knowledge graph: warm_paths (Founder→knows→Person→works_at→Company←matched_to), hiring_signals (Signal[hiring]→Company→Person matching a persona), competitor_displacement (Company uses a Competitor → its buyers), super_connectors (Contact→opens paths to→many Persons: who in the network matters most), job_changes (Contact moved→into a target Company).',
+    inputSchema: z.object({name: z.enum(['warm_paths', 'hiring_signals', 'competitor_displacement', 'super_connectors', 'job_changes'])}),
   }, async ({name}) => {
     meter(db, 'graph_queries');
     const L = leads(db);
     if (name === 'warm_paths') return ok(L.filter((l) => l.paths.length).map((l) => `${l.paths[0].hops.join(' → ')} @ ${l.company?.name} (${l.paths[0].kind})`).join('\n') || 'No warm paths yet.');
+    if (name === 'super_connectors') return ok(superConnectors(db).map((x) => `${x.contact.name} (${x.contact.company}) opens ${x.leads.length}: ${x.leads.join(', ')}`).join('\n') || 'No connection opens a path yet.');
+    if (name === 'job_changes') return ok(db.moves.map((m) => `${m.name}: ${m.from} → ${m.to}${m.intoTarget ? ' (target company)' : ''} [${m.source}]`).join('\n') || 'No job changes recorded yet.');
     if (name === 'hiring_signals') return ok(L.filter((l) => l.signals.some((s) => s.kind === 'hiring')).map((l) => `${l.company?.name}: ${l.signals.filter((s) => s.kind === 'hiring').map((s) => s.text).join('; ')} → ${l.person.name}, ${l.person.title}`).join('\n') || 'No hiring signals yet.');
     const hits = L.filter((l) => l.signals.some((s) => db.competitors.some((k) => s.text.toLowerCase().includes(k.name.toLowerCase()))));
     return ok(hits.map((l) => `${l.company?.name} uses ${db.competitors.filter((k) => l.signals.some((s) => s.text.toLowerCase().includes(k.name.toLowerCase()))).map((k) => k.name).join(', ')} → ${l.person.name}`).join('\n') || 'No competitor users found yet (add tech signals that name a competitor).');
@@ -278,7 +297,7 @@ function makeServer() {
   mcp.registerTool('draft_outreach', {
     description: 'Draft a multi-touch sequence for one lead. kind=intro_request goes to the mutual connection (viaContactId from find_warm_paths) asking for an intro; kind=cold goes to the lead. Every factual sentence must be in claims with its source URL. The founder approves, edits or rejects it.',
     inputSchema: z.object({
-      person_id: z.string(), kind: z.enum(['intro_request', 'cold']), variant: z.enum(['A', 'B']).default('A'), via_contact_id: z.string().optional(),
+      person_id: z.string(), kind: z.enum(['intro_request', 'cold', 'referral_ask']).describe('referral_ask = to a customer you closed, asking for 1–2 intros to named people like them'), variant: z.enum(['A', 'B']).default('A'), via_contact_id: z.string().optional(),
       angle: z.string().describe('the personalised hook in a few words, e.g. "hiring 2 motion designers"'),
       touches: z.array(z.object({channel: z.enum(['email', 'linkedin']), day: z.number().int().min(0), subject: z.string().optional(), body: z.string()})).min(1).max(4),
       claims: z.array(z.object({text: z.string().describe('the exact sentence or phrase as it appears in a touch'), url: z.string().url()})),
@@ -328,7 +347,8 @@ app.post('/mcp', async (req, res) => {
 app.get('/mcp', (_req, res) => { res.status(405).set('Allow', 'POST').end(); });
 
 app.post('/api/network', express.json({limit: '20mb'}), (req, res) => {
-  const {csv, name, schools, pastCompanies, fileName} = req.body as {csv?: string; name?: string; schools?: string[]; pastCompanies?: string[]; fileName?: string};
+  const {csv, name, schools, pastCompanies, communities, fileName} = req.body as {csv?: string; name?: string; schools?: string[]; pastCompanies?: string[]; communities?: string[]; fileName?: string};
+  if (communities) db.founder.communities = communities.filter(Boolean);
   if (name != null) db.founder.name = name;
   if (schools) db.founder.schools = schools.filter(Boolean);
   if (pastCompanies) db.founder.pastCompanies = pastCompanies.filter(Boolean);
@@ -350,6 +370,27 @@ app.post('/api/demo/load', (_req, res) => {
 });
 app.post('/api/reset', (_req, res) => { const keep = db.founder; db = emptyDB(Number(process.env.CREDITS ?? 50)); db.founder = keep; changed(); res.json({ok: true}); });
 app.get('/api/health', (_req, res) => { res.json({ok: true, clients: clients.size, agentSeenSecondsAgo: lastAgentAt ? Math.round((Date.now() - lastAgentAt) / 1000) : null, hunter: !!process.env.HUNTER_API_KEY, flexprice: !!process.env.FLEXPRICE_API_KEY}); });
+
+/** Every deal grows the network: someone you met or closed becomes a node that can open paths to their colleagues and ex-colleagues. */
+function growNetwork(p: Person, st: Stage) {
+  if (st !== 'meeting' && st !== 'closed') return;
+  const c = db.companies.find((x) => x.id === p.companyId);
+  let k = db.founder.network.find((x) => x.personId === p.id);
+  if (!k) { k = {id: uid('ct'), name: p.name, company: c?.name ?? '', position: p.title, url: p.linkedin, origin: st === 'closed' ? 'customer' : 'met', personId: p.id, companySource: 'pipeline'}; db.founder.network.push(k); }
+  else if (st === 'closed') k.origin = 'customer';
+  think('planner', `${p.name} joined your network`, st === 'closed' ? 'A customer now opens paths to their colleagues and ex-colleagues.' : 'Someone you met now counts as a connection.');
+  audit('ai', 'added to your network', p.name, st === 'closed' ? 'customer' : 'met');
+  if (st === 'closed') pushTask(`Deal closed with ${p.name} (${p.title}, ${c?.name}). Ask them for intros: draft_outreach kind=referral_ask to person_id ${p.id}, asking for 1–2 intros to specific people like them (look for buyers at their past companies ${p.pastCompanies.join(', ') || '(none known)'} and at ICP companies they'd plausibly know; name them). Keep it short and easy to say yes to. Then review it and tell the founder with an action to Outreach.`, 'referral');
+}
+function recordMove(c: Contact, from: string, source: string): string {
+  const target = db.companies.find((x) => sameOrg(x.name, c.company) && !x.negative);
+  db.moves.push({at: Date.now(), contactId: c.id, name: c.name, from, to: c.company, position: c.position, source, intoTarget: target?.id});
+  if (target) {
+    db.signals.push({id: uid('s'), companyId: target.id, kind: 'job_change', text: `Your connection ${c.name} just joined ${target.name}${c.position ? ` as ${c.position}` : ''}`, url: source, date: new Date().toISOString().slice(0, 10)});
+    think('scout', `${c.name} moved to ${target.name}`, 'A company on your list now has someone you know inside.');
+  }
+  return `${c.name}: ${from} → ${c.company}${target ? ' (a company on your list)' : ''}`;
+}
 
 type Msg = {type: string; [k: string]: unknown};
 function onMessage(m: Msg) {
@@ -392,7 +433,13 @@ function onMessage(m: Msg) {
   } else if (m.type === 'stage') {
     const p = db.people.find((x) => x.id === s('personId'));
     const st = s('stage') as Stage;
-    if (p && STAGES.includes(st)) { const from = p.stage; p.stage = st; p.stageBy = 'founder'; p.stageAt = Date.now(); audit('founder', `moved ${from} → ${st}`, p.name); }
+    if (p && STAGES.includes(st)) { const from = p.stage; p.stage = st; p.stageBy = 'founder'; p.stageAt = Date.now(); audit('founder', `moved ${from} → ${st}`, p.name); growNetwork(p, st); }
+  } else if (m.type === 'connector') {
+    const k = db.connectors.find((x) => x.id === s('id'));
+    if (!k) return;
+    k.status = s('action') as typeof k.status;
+    audit('founder', k.status === 'done' ? 'met' : 'dismissed', k.name);
+    if (k.status === 'done') db.founder.network.push({id: uid('ct'), name: k.name, company: k.company, position: k.title, origin: 'typed', companySource: 'founder'});
   } else if (m.type === 'contact') {
     const c = db.founder.network.find((x) => x.id === s('id'));
     if (!c) return;

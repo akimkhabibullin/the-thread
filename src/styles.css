@@ -287,7 +287,7 @@ table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
 .intro p { font-size: 19px; line-height: 1.6; margin: 0; }
 .home-numbers { padding: 0 var(--gutter) 6vh; }
 .feature { max-width: 1120px; margin: 0 auto; padding: 18vh var(--gutter) 0; }
-.feature-title { font-size: clamp(56px, 6.6vw, 96px); text-align: center; margin-bottom: 9vh; }
+.feature-title { font-size: clamp(56px, 6.6vw, 96px); line-height: 1.02; text-align: center; margin-bottom: 9vh; }
 .feature-body { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(40px, 7vw, 110px); align-items: center; }
 .feature-body .paper-wrap { margin: 30px 0 0 40px; }
 .feature-text h3 { font-size: clamp(30px, 2.8vw, 40px); line-height: 1.12; margin-bottom: 26px; }
@@ -489,7 +489,7 @@ table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
 .net-band .hop.buyer { color: #fff; }
 .net-band .dim, .net-band .tier { color: #9a9a9a; }
 .net-band .path-meta { color: #ddd; }
-.net-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; margin-top: 10vh; text-align: center; color: #aaa; font-size: 14px; }
+.net-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 30px; margin-top: 10vh; text-align: center; color: #aaa; font-size: 14px; }
 .net-stats .big { display: block; font: 400 clamp(56px, 6vw, 88px)/1 var(--serif); color: #fff; margin-bottom: 8px; }
 .net-stats i { font-style: normal; color: var(--red); }
 .network .net-setup { margin-top: 14vh; }
@@ -614,3 +614,37 @@ table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
 .toast .close { color: #fff; font-size: 28px; }
 
 .enrich-note { font-size: 12px; color: var(--muted, #777); margin-top: 6px; max-width: 200px; }
+
+/* ====== Round 5: network growth ====== */
+.referral { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule); }
+.ref-title { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--red-deep); margin-bottom: 2px; }
+.badge-ref { display: inline-block; background: var(--red); color: #fff; border-radius: 999px; padding: 3px 10px; margin-right: 10px; letter-spacing: .06em; }
+.ib-meta b.ref { color: var(--red-deep); font-weight: 700; }
+.joined { display: inline-block; font: 700 10px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; color: #fff; background: var(--red); border-radius: 999px; padding: 4px 8px; margin-right: 8px; vertical-align: 1px; white-space: nowrap; }
+.mv-to .joined { margin: 0 0 0 10px; }
+.otag { display: inline-block; font: 700 10px/1 var(--sans); letter-spacing: .08em; text-transform: uppercase; border: 1px solid currentColor; border-radius: 999px; padding: 3px 7px; margin-left: 6px; color: var(--muted); vertical-align: 2px; }
+.otag.customer { color: var(--red-deep); }
+.net-band .otag { color: #bbb; } .net-band .otag.customer { color: #ff5a5a; }
+.deal-line { text-align: center; color: #cfcfcf; margin: 40px 0 0; font-size: 14px; }
+.meet { margin-top: 14vh; }
+.meet-head { text-align: center; max-width: 860px; margin: 0 auto 7vh; }
+.meet-head h2, .moves h2 { font-size: clamp(40px, 4.6vw, 64px); line-height: 1.05; margin-bottom: 14px; }
+.meet-head .pills { justify-content: center; }
+.supers { max-width: 900px; margin: 0 auto 8vh; }
+.supers h3 { font-size: 28px; margin-bottom: 14px; }
+.super-row { display: grid; grid-template-columns: 1.1fr 1fr 1.6fr; gap: 20px; padding: 16px 0; border-top: 1px solid var(--rule); font-size: 14px; align-items: baseline; }
+.sr-name { font: 400 22px/1.2 var(--serif); }
+.connectors { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
+.connector { background: var(--grey); padding: 30px 30px 26px; }
+.connector h3 { font-size: 30px; line-height: 1.1; margin-bottom: 4px; }
+.connector p { font-size: 14px; margin: 14px 0 0; }
+.moves { margin-top: 14vh; max-width: 900px; margin-left: auto; margin-right: auto; }
+.moves > p { margin: 0 0 30px; }
+.move { display: grid; grid-template-columns: 1fr 1.6fr 1.2fr; gap: 20px; padding: 18px 0; border-top: 1px solid var(--rule); align-items: baseline; }
+.mv-name { font: 400 22px/1.2 var(--serif); }
+.move.target .mv-to { color: var(--red-deep); font-weight: 700; }
+.grows { max-width: 1120px; margin: 0 auto; padding: 18vh var(--gutter) 0; }
+.grows-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 56px 90px; max-width: 900px; margin: 0 auto 8vh; }
+.grows-grid h3 { font-size: 30px; margin-bottom: 10px; }
+.grows-grid p { margin: 0; font-size: 15px; }
+@media (max-width: 960px) { .grows-grid, .super-row, .move, .net-stats { grid-template-columns: 1fr; } }

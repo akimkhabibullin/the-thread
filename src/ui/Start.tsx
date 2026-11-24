@@ -44,8 +44,8 @@ export function Start({onMenu}: {onMenu: () => void}) {
   const to = (n: number) => { location.hash = `#/start/${n}`; };
 
   const f = db.founder;
-  const [name, setName] = useState(f.name), [schools, setSchools] = useState(f.schools.join(', ')), [past, setPast] = useState(f.pastCompanies.join(', '));
-  useEffect(() => { setName(f.name); setSchools(f.schools.join(', ')); setPast(f.pastCompanies.join(', ')); }, [f.name, f.schools.join(), f.pastCompanies.join()]);
+  const [name, setName] = useState(f.name), [schools, setSchools] = useState(f.schools.join(', ')), [past, setPast] = useState(f.pastCompanies.join(', ')), [comms, setComms] = useState((f.communities ?? []).join(', '));
+  useEffect(() => { setName(f.name); setSchools(f.schools.join(', ')); setPast(f.pastCompanies.join(', ')); setComms((f.communities ?? []).join(', ')); }, [f.name, f.schools.join(), f.pastCompanies.join(), (f.communities ?? []).join()]);
   const [msg, setMsg] = useState('');
   const [product, setProduct] = useState('');
   const agentOn = connected && status !== 'offline';
@@ -59,7 +59,7 @@ export function Start({onMenu}: {onMenu: () => void}) {
   const companies = new Set(f.network.filter((c) => c.company?.trim()).map((c) => c.company)).size;
 
   const cont = async () => {
-    if (step === 1) { await post('/api/network', {name: name.trim(), schools: list(schools), pastCompanies: list(past)}); to(2); }
+    if (step === 1) { await post('/api/network', {name: name.trim(), schools: list(schools), pastCompanies: list(past), communities: list(comms)}); to(2); }
     else if (step === 2 || step === 3) to(step + 1);
     else {
       const t = product.trim();
@@ -87,12 +87,13 @@ export function Start({onMenu}: {onMenu: () => void}) {
 
         {step === 1 && <section className="setup">
           <h1>About you<span className="red">.</span></h1>
-          <p className="lede">Where you studied and worked is how the agent finds people you have something in common with. A shared school or an old employer is often the warmest way in.</p>
+          <p className="lede">Where you studied and worked is how the agent finds people you have something in common with. A shared school, an old employer or a community you're both in is often the warmest way in.</p>
           {done[0] && <p className="done-note">Done. Change anything you like.</p>}
           <div className="setup-form">
             <label className="lbl">Your name<input autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="Akim Khabibullin" /></label>
             <label className="lbl">Schools<input value={schools} onChange={(e) => setSchools(e.target.value)} placeholder="Northeastern University, Lycée 1" /></label>
             <label className="lbl">Past companies<input value={past} onChange={(e) => setPast(e.target.value)} placeholder="Comma separated, e.g. Intercom, Figma" /></label>
+            <label className="lbl">Communities, accelerators, events, podcasts<input value={comms} onChange={(e) => setComms(e.target.value)} placeholder="e.g. YC W24, Lenny's community, a podcast you were on" /></label>
           </div>
         </section>}
 

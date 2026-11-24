@@ -42,12 +42,19 @@ function WhatNow({focus}: {focus: () => void}) {
   if (openQ) steps.push({label: `Answer ${openQ === 1 ? 'the agent\'s question' : `${openQ} questions`}`, sub: 'just below', to: '#asks'});
   if (pending.length) steps.push({label: `Review ${pending.length} ${pending.length === 1 ? 'draft' : 'drafts'}`, sub: intros ? `${intros} ${intros === 1 ? 'is a warm intro' : 'are warm intros'}` : undefined, to: href('outreach')});
   if (newLeads) steps.push({label: `See ${newLeads} new ${newLeads === 1 ? 'lead' : 'leads'}`, sub: 'since your last visit', to: href('leads')});
+  const referral = pending.find((d) => d.kind === 'referral_ask');
+  if (referral) steps.unshift({label: `Ask ${db.people.find((p) => p.id === referral.personId)?.name.split(' ')[0] ?? 'your customer'} for intros`, sub: 'your new customer', to: href('outreach')});
+  const dayAgo = Date.now() - 7 * 24 * 3600 * 1000;
+  const moves = (db.moves ?? []).filter((m) => m.at > dayAgo);
+  if (moves.length) steps.push({label: `${moves.length} of your connections changed jobs`, sub: moves.some((m) => m.intoTarget) ? 'some into companies you want' : 'this week', to: href('network') + '#moves'});
+  const toMeet = (db.connectors ?? []).filter((c) => c.status === 'open').length;
+  if (toMeet) steps.push({label: `Meet ${toMeet} ${toMeet === 1 ? 'person who opens' : 'people who open'} more buyers`, to: href('network') + '#meet'});
   if (needCo) steps.push({label: `Fill in ${needCo} ${needCo === 1 ? 'connection' : 'connections'}`, sub: 'they need a company to open a path', to: href('network')});
   const ideas = (
     <div className="suggest">
       <button onClick={() => task(best ? `Find 10 more leads like ${best.person.name} at ${best.company?.name} (my best lead so far): similar company, same kind of role.` : 'Find 10 more leads that fit the ICP.')}>Find 10 more leads like my best one</button>
       <button onClick={() => task('Suggest one new industry that fits my product, explain why, and find 5 leads there.')}>Try a new industry</button>
-      <button onClick={() => task('Refresh hiring, funding and launch signals for the companies in my list, with sources.')}>Refresh hiring and funding signals</button>
+      <button onClick={() => task('Refresh hiring, funding and launch signals for the companies in my list, with sources, and re-check where my connections near the ICP work now (job changes).')}>Refresh hiring and funding signals</button>
       {flagged && <button onClick={() => task(`Rewrite the draft for ${flaggedName ?? 'the lead'} that the reviewer flagged, fixing or cutting the unsupported claims.`)}>Rewrite the flagged draft</button>}
     </div>
   );

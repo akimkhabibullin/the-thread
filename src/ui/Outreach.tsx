@@ -37,7 +37,7 @@ function Reader({d}: {d: Draft}) {
   return (
     <article className={`reader ${d.status}`}>
       <header className="reader-head">
-        <div className="who">{d.kind === 'intro_request' ? `Intro request via ${via?.name ?? 'a connection'}` : 'Cold sequence'} · variant {d.variant}</div>
+        <div className="who">{d.kind === 'referral_ask' && <span className="badge-ref">Referral ask</span>}{d.kind === 'intro_request' ? `Intro request via ${via?.name ?? 'a connection'}` : d.kind === 'referral_ask' ? 'To your customer, asking for intros' : 'Cold sequence'} · variant {d.variant}</div>
         <h2>{lead?.person.name}</h2>
         <div className="quiet">{lead?.person.title}, {lead?.company?.name}{lead && <> · <Tier tier={lead.tier} score={lead.score} /></>}</div>
         <div className="quiet small">Angle: {d.angle}</div>
@@ -107,7 +107,7 @@ export function OutreachView() {
           return (
             <li key={d.id}><button className={`${cur?.id === d.id ? 'on' : ''} ${d.status}`} onClick={() => setSel(d.id)}>
               <span className="ib-name">{p?.name ?? 'Unknown'}</span>
-              <span className="ib-meta">{d.kind === 'intro_request' ? 'Intro request' : 'Cold'} · {d.status === 'pending' ? (d.review ? `proof ${d.review.proofScore}` : 'in review') : d.status}</span>
+              <span className="ib-meta">{d.kind === 'intro_request' ? 'Intro request' : d.kind === 'referral_ask' ? <b className="ref">Referral ask</b> : 'Cold'} · {d.status === 'pending' ? (d.review ? `proof ${d.review.proofScore}` : 'in review') : d.status}</span>
               {d.review?.verdict === 'fix' && d.status === 'pending' && <span className="ib-flag">flagged</span>}
             </button></li>
           );

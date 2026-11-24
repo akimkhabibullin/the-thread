@@ -14,7 +14,7 @@ export type StepId = (typeof STEPS)[number]['id'];
 export type Route = 'home' | 'start' | StepId;
 
 const parse = (): Route => {
-  const h = location.hash.replace(/^#\/?/, '').split(/[/?]/)[0];
+  const h = location.hash.replace(/^#\/?/, '').split(/[/?#]/)[0];
   if (h === 'start') return 'start';
   return (STEPS.find((s) => s.id === h)?.id ?? 'home') as Route;
 };

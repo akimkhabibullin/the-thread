@@ -9,11 +9,11 @@ import {readSeen, writeSeen} from './Agent';
 export const Sources = ({s}: {s: Source[]}) => <span className="sources">{s.map((x, i) => <a key={i} href={x.url} target="_blank" rel="noreferrer" title={x.title ?? x.url} onClick={(e) => e.stopPropagation()}>{i + 1}</a>)}</span>;
 export const Num = ({n, className = ''}: {n: number | string; className?: string}) => <span className={`num ${className}`}>{n}<i>.</i></span>;
 export const Tier = ({tier, score}: {tier: string; score: number}) => <span className="tier" title={`Score ${score}`}>Tier {tier} · {score}</span>;
-const PATH_LABEL = {colleague: 'knows someone there', former_colleague: 'knows an ex-colleague', shared_employer: 'same ex-employer', shared_school: 'same school'};
+const PATH_LABEL = {colleague: 'knows someone there', former_colleague: 'knows an ex-colleague', shared_employer: 'same ex-employer', shared_school: 'same school', shared_community: 'same community'};
 
 type Sort = 'score' | 'tier' | 'company' | 'newest';
 const FIND_MORE = 'Find 10 more leads that fit the ICP, avoiding companies already in the list; prioritise ones reachable through my network.';
-const REFRESH = 'Refresh hiring, funding and launch signals for the companies in my list, with sources.';
+const REFRESH = 'Refresh hiring, funding and launch signals for the companies in my list, with sources, and re-check where my connections near the ICP work now (job changes).';
 
 export function LeadsView() {
   const {db, status, connected} = useLink();
@@ -84,7 +84,7 @@ export function LeadsView() {
               <td className="c-score"><Num n={l.score} /><div className="tier-s">Tier {l.tier}</div></td>
               <td><div className="lead-name">{l.person.name}{fresh(l.person.id) && <span className="new">New</span>}</div><div className="quiet">{l.person.title}</div></td>
               <td><div className="lead-co">{l.company?.name}</div><div className="quiet">{[l.company?.industry, l.company?.employees && `${l.company.employees} people`].filter(Boolean).join(', ')}</div></td>
-              <td className="c-signal">{l.signals[0] ? <span>{l.signals[0].text}{l.signals.length > 1 && <span className="quiet"> +{l.signals.length - 1}</span>}</span> : <span className="quiet">None</span>}</td>
+              <td className="c-signal">{l.signals[0] ? <span>{l.signals.some((x) => x.kind === 'job_change') && <span className="joined">just joined</span>}{(l.signals.find((x) => x.kind === 'job_change') ?? l.signals[0]).text}{l.signals.length > 1 && <span className="quiet"> +{l.signals.length - 1}</span>}</span> : <span className="quiet">None</span>}</td>
               <td><Sources s={[...l.person.sources, ...(l.company?.sources ?? [])]} /></td>
               <td>{l.paths[0] ? <span className="warm">via {l.paths[0].hops[1]}<div className="quiet">{PATH_LABEL[l.paths[0].kind]}</div></span> : <span className="quiet">Cold</span>}</td>
               <td onClick={(e) => e.stopPropagation()}>{l.person.email ? <span className="email" title={l.person.emailStatus}>{l.person.email}</span> : <><button className="pill sm" onClick={() => sendWs({type: 'enrich', personId: l.person.id})}>Find email</button>{l.person.enrichNote && <div className="enrich-note">{/HUNTER_API_KEY/.test(l.person.enrichNote) ? 'Needs a Hunter key: get one free at hunter.io and put it in .env' : l.person.enrichNote}</div>}</>}</td>
@@ -94,7 +94,7 @@ export function LeadsView() {
                 <div><h4>Why this score</h4><ul>{l.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
                   <div className="quiet small">Fit {l.fit} of 60 · intent {l.intent} of 25 · warm {l.warm} of 15</div></div>
                 <div><h4>Warm paths</h4>{l.paths.length ? l.paths.map((p, i) => <div key={i} className="mini-path"><Hops hops={p.hops} /><div className="quiet small">{p.text}</div></div>) : <div className="quiet">No path found in your network.</div>}</div>
-                <div><h4>Signals</h4>{l.signals.map((s) => <div key={s.id} className="sig"><span className="kind">{s.kind}</span><a className="u" href={s.url} target="_blank" rel="noreferrer">{s.text}</a></div>)}
+                <div><h4>Signals</h4>{l.signals.map((s) => <div key={s.id} className="sig">{s.kind === 'job_change' ? <span className="joined">just joined</span> : <span className="kind">{s.kind}</span>}<a className="u" href={s.url} target="_blank" rel="noreferrer">{s.text}</a></div>)}
                   {!l.signals.length && <div className="quiet">None found.</div>}
                   <div className="small src-line">Person <Sources s={l.person.sources} /> Company <Sources s={l.company?.sources ?? []} /></div>
                   {l.company?.why && <p className="quiet small">{l.company.why}</p>}
