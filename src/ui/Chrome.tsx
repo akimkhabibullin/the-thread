@@ -3,6 +3,7 @@ import {useEffect, useRef, useState} from 'react';
 import {ago, post, useLink} from '../link';
 import {href, pad, Route, STEPS, StepId} from '../route';
 import {useStartHref} from './Start';
+import {AgentMark} from './Agent';
 
 export function Logo({tone = 'red', words = true}: {tone?: 'red' | 'white' | 'black'; words?: boolean}) {
   return (
@@ -66,7 +67,7 @@ export function Feed({open, onClose}: {open: boolean; onClose: () => void}) {
   useEffect(() => { if (open) end.current?.scrollIntoView({block: 'end'}); }, [db.thoughts.length, open]);
   return (
     <aside className={`feed ${open ? 'open' : ''}`} aria-hidden={!open}>
-      <div className="feed-top"><span>What the agent is doing <em>· {agentLabel(connected, status)}</em></span><button className="close" onClick={onClose} aria-label="Close">×</button></div>
+      <div className="feed-top"><span className="feed-title"><AgentMark size={26} />What the agent is doing <em>· {agentLabel(connected, status)}</em></span><button className="close" onClick={onClose} aria-label="Close">×</button></div>
       <div className="feed-list">
         {db.thoughts.slice(-80).map((t, i) => (
           <div key={i} className="thought">
@@ -91,13 +92,13 @@ export function TopBar({route, onMenu, onFeed, feedOpen}: {route: StepId; onMenu
   return (
     <header className="topbar">
       <div className="tb-left">
-        <Logo />
+        <Logo tone={route === 'network' ? 'white' : 'red'} />
         <span className="where"><span className="n">{pad(i + 1)} / {pad(STEPS.length)}</span>{STEPS[i].title}</span>
       </div>
       <div className="tb-right">
-        <span className="usage" title="Enrichment credits are metered with Flexprice">{u.credits} credits · {u.leads_enriched} enriched · {u.outreach_sent} queued · {u.graph_queries} graph queries</span>
+        <span className={`credits ${u.credits <= 5 ? 'low' : ''}`} title="Enrichment credits left, metered with Flexprice">{u.credits} credits</span>
         <button className={`agent-toggle ${label} ${feedOpen ? 'on' : ''}`} onClick={onFeed}><i />Agent · {label}</button>
-        <Burger onClick={onMenu} />
+        <Burger onClick={onMenu} light={route === 'network'} />
       </div>
     </header>
   );

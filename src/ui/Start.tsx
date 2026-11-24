@@ -3,7 +3,6 @@ import {useEffect, useState} from 'react';
 import {post, sendWs, useLink} from '../link';
 import {go, href} from '../route';
 import {Burger, Logo} from './Chrome';
-import {Num} from './Leads';
 
 const SETUP = ['About you', 'Your network', 'Connect the agent', 'What you sell'] as const;
 const list = (s: string) => s.split(',').map((x) => x.trim()).filter(Boolean);
@@ -56,7 +55,8 @@ export function Start({onMenu}: {onMenu: () => void}) {
     const r = await post('/api/network', {csv: await file.text(), fileName: file.name});
     setMsg(r.error ?? `Imported ${r.added} connections.`);
   };
-  const companies = new Set(f.network.map((c) => c.company)).size;
+  const withCo = f.network.filter((c) => c.company?.trim()).length;
+  const companies = new Set(f.network.filter((c) => c.company?.trim()).map((c) => c.company)).size;
 
   const cont = async () => {
     if (step === 1) { await post('/api/network', {name: name.trim(), schools: list(schools), pastCompanies: list(past)}); to(2); }
@@ -102,18 +102,20 @@ export function Start({onMenu}: {onMenu: () => void}) {
           <div className="setup-two">
             <label className="drop" onDragOver={(e) => e.preventDefault()} onDrop={(e) => { e.preventDefault(); const file = e.dataTransfer.files[0]; if (file) void upload(file); }}>
               <input type="file" accept=".csv" onChange={(e) => { const file = e.target.files?.[0]; if (file) void upload(file); }} />
-              {f.network.length ? <><span className="drop-num">{f.network.length}<i>.</i></span><span>connections at {companies} companies</span><span className="quiet small">Drop a new file to replace</span></>
+              {f.network.length ? <><span className="drop-num">{f.network.length}<i>.</i></span><span>connections at {companies} companies</span><span className="small">{withCo} with a company · {f.network.length - withCo} without</span><span className="quiet small">Drop a new file to replace</span></>
                 : <><span className="drop-title">Drop Connections.csv</span><span className="quiet small">or click to choose a file</span></>}
             </label>
             <div>
               <h3>How to get the file</h3>
               <ol className="howto">
-                <li>On LinkedIn, open <b>Settings &amp; Privacy</b>.</li>
-                <li>Go to <b>Data privacy</b>, then <b>Get a copy of your data</b>.</li>
-                <li>Pick <b>Connections</b> and request the archive.</li>
-                <li>It arrives by email in about ten minutes. Drop the <code>Connections.csv</code> from it here.</li>
+                <li>On LinkedIn, click <b>Me</b>, then <b>Settings &amp; Privacy</b>.</li>
+                <li>Open <b>Data privacy</b>, then <b>Download your data</b> (<a className="u" href="https://www.linkedin.com/mypreferences/d/download-my-data" target="_blank" rel="noreferrer">direct link</a>).</li>
+                <li>Choose <b>Download larger data archive</b>. The smaller "select files" list doesn't include connections.</li>
+                <li>Click <b>Request archive</b>. It arrives by email; unzip it and drop <code>Connections.csv</code> here.</li>
               </ol>
+              <p className="small quiet">From December 2026 LinkedIn's export only has names, profile links and dates, without current companies or titles. If your file has no companies, that's fine: The Thread's agent looks up where your connections work now from their public profiles, and you can fill in the ones you know.</p>
               <p className="small">Waiting for the email? <a className="u" href="#" onClick={async (e) => { e.preventDefault(); const t = await fetch('/sample-connections.csv').then((r) => r.text()); await upload(new File([t], 'sample-connections.csv')); }}>Use a sample network</a> for now.</p>
+              {f.network.length > 0 && <p className="small">{withCo} of {f.network.length} have a company{f.network.length - withCo > 0 ? <>; <b>{f.network.length - withCo}</b> still need one. The agent can look them up later, from the <a className="u" href={href('network')}>Network</a> page.</> : '.'}</p>}
               {msg && <p className="quiet small">{msg}</p>}
             </div>
           </div>
@@ -133,8 +135,8 @@ export function Start({onMenu}: {onMenu: () => void}) {
               <p className="small">Add The Thread as an MCP server, then ask Claude to start it.</p>
               <Copy cmd="claude mcp add --transport http warmpath http://127.0.0.1:5299/mcp" />
             </div>
-            <div className="status-block">
-              {agentOn ? <><Num n="Connected" /><p>The agent is {status === 'working' ? 'working' : 'listening'}. You can continue.</p></>
+            <div className="agent-status">
+              {agentOn ? <><div className="connected">Connected<i>.</i></div><p>The agent is {status === 'working' ? 'working' : 'listening'}. You can continue.</p></>
                 : <><div className="waiting">Waiting for Claude Code<span className="dots">…</span></div>
                   <p className="quiet small">{connected ? 'This page notices the moment it starts listening.' : 'The local bridge is not reachable. Is the dev server running?'} You can continue anyway; your brief will wait until the agent is running.</p></>}
             </div>

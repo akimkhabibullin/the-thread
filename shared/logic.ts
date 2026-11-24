@@ -93,7 +93,7 @@ function parseCsvLine(line: string) {
 /** LinkedIn's export starts with a few "Notes:" lines before the header row; skip to the header. */
 export function parseConnections(csv: string): Omit<Contact, 'id'>[] {
   const lines = csv.replace(/^﻿/, '').split(/\r?\n/);
-  const h = lines.findIndex((l) => /first name/i.test(l) && /company/i.test(l));
+  const h = lines.findIndex((l) => /first name/i.test(l) && /last name|url|company/i.test(l));
   if (h < 0) return [];
   const head = parseCsvLine(lines[h]).map((x) => x.toLowerCase());
   const col = (n: string) => head.findIndex((x) => x === n);
@@ -101,5 +101,5 @@ export function parseConnections(csv: string): Omit<Contact, 'id'>[] {
   return lines.slice(h + 1).filter((l) => l.trim()).map(parseCsvLine).map((r) => ({
     name: `${r[fn] ?? ''} ${r[ln] ?? ''}`.trim(), company: r[co] ?? '', position: r[pos] ?? '',
     url: r[url] || undefined, email: r[em] || undefined, connectedOn: r[on] || undefined,
-  })).filter((c) => c.name && c.company);
+  })).filter((c) => c.name); // LinkedIn exports from Dec 2026 drop company/position; the agent can fill them in later
 }

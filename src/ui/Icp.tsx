@@ -1,19 +1,21 @@
-// Step 02: the customer profile with how sure the agent is about each part, and ways to widen it (accept / adjust / dismiss).
+// Step 02: the customer profile as an editorial spread: one statement sentence, then a spec sheet with how sure the agent is.
 import {sendWs, useLink} from '../link';
 import type {Conf} from '../../shared/types';
 import {Empty, PageHead} from './Chrome';
 import {href} from '../route';
 
 const Sure = ({c}: {c: number}) => <span className={`sure ${c < 0.5 ? 'lo' : ''}`} title="How sure the agent is">{Math.round(c * 100)}% sure</span>;
-function Field<T>({label, f, render}: {label: string; f: Conf<T>; render: (v: T) => React.ReactNode}) {
+function Spec<T>({label, f, render}: {label: string; f: Conf<T>; render: (v: T) => React.ReactNode}) {
   return (
-    <div className="field">
-      <div className="f-label">{label}<Sure c={f.confidence} /></div>
-      <div className="f-value">{render(f.value)}{f.why && <div className="why">{f.why}</div>}</div>
+    <div className="spec">
+      <div className="spec-label"><span>{label}</span><Sure c={f.confidence} /></div>
+      <div className="spec-value">{render(f.value)}</div>
+      {f.why && <div className="why">{f.why}</div>}
     </div>
   );
 }
 const list = (xs: string[]) => xs.length ? xs.join(', ') : <span className="quiet">None</span>;
+const and = (xs: string[]) => xs.length <= 1 ? xs[0] ?? '' : `${xs.slice(0, -1).join(', ')} and ${xs[xs.length - 1]}`;
 
 export function IcpView() {
   const {db} = useLink();
@@ -21,19 +23,30 @@ export function IcpView() {
   if (!icp) return <><PageHead title="Profile" /><Empty title="Nothing here yet">Start with the <a className="u" href={href('brief')}>brief</a>. Describe your product and the agent builds the profile, with how sure it is about each part.</Empty></>;
   const open = db.expansions.filter((e) => e.status === 'open');
   const decided = db.expansions.filter((e) => e.status !== 'open');
+  const personas = icp.personas.value.slice(0, 2).map((p) => p.title.toLowerCase());
+  const inds = icp.industries.value.slice(0, 1).map((i) => i.name.split(' / ')[0]);
+  const {min, max} = icp.companySize.value;
   return (
     <div className="profile">
-      <PageHead title="Profile" lede={<>Who buys <b>{icp.product}</b>. {icp.summary}</>} />
-      <div className="fields">
-        <Field label="Industries" f={icp.industries} render={(v) => list(v.map((i) => (i.naics ? `${i.name} (NAICS ${i.naics})` : i.name)))} />
-        <Field label="Company size" f={icp.companySize} render={(v) => `${v.min.toLocaleString()} to ${v.max.toLocaleString()} employees`} />
-        <Field label="Buyers" f={icp.personas} render={(v) => list(v.map((p) => [p.title, p.seniority].filter(Boolean).join(', ')))} />
-        <Field label="Buying triggers" f={icp.triggers} render={list} />
-        <Field label="Regions" f={icp.geos} render={list} />
-        <Field label="Not a fit" f={icp.negatives} render={list} />
+      <div className="spread">
+        <div className="spread-left">
+          <div className="who">Customer profile · {icp.product}</div>
+          <h1 className="statement">
+            {icp.product} sells to {and(personas)} at {and(inds)} companies of {min.toLocaleString()} to {max.toLocaleString()} people<span className="red">{icp.triggers.value[0] ? `, usually when ${icp.triggers.value[0].charAt(0).toLowerCase()}${icp.triggers.value[0].slice(1)}.` : '.'}</span>
+          </h1>
+        </div>
+        <p className="spread-right">{icp.summary}</p>
       </div>
-      {open.length > 0 && <section className="block">
-        <h2 className="center">Ways to widen it</h2>
+      <div className="specsheet">
+        <Spec label="Industries" f={icp.industries} render={(v) => list(v.map((i) => (i.naics ? `${i.name} (NAICS ${i.naics})` : i.name)))} />
+        <Spec label="Company size" f={icp.companySize} render={(v) => `${v.min.toLocaleString()} to ${v.max.toLocaleString()} employees`} />
+        <Spec label="Buyers" f={icp.personas} render={(v) => list(v.map((p) => [p.title, p.seniority].filter(Boolean).join(', ')))} />
+        <Spec label="Buying triggers" f={icp.triggers} render={list} />
+        <Spec label="Regions" f={icp.geos} render={list} />
+        <Spec label="Not a fit" f={icp.negatives} render={list} />
+      </div>
+      {open.length > 0 && <section className="widen">
+        <h2>Ways to widen it</h2>
         <div className="expansions">{open.map((e) => (
           <div key={e.id} className="exp">
             <div className="who">{e.field}</div>

@@ -24,14 +24,17 @@ export type Company = {
 export type Person = {
   id: string; name: string; title: string; seniority?: string; companyId: string;
   linkedin?: string; schools: string[]; pastCompanies: string[]; sources: Source[];
-  email?: string; emailScore?: number; emailStatus?: string; enrichedAt?: number;
+  email?: string; emailScore?: number; emailStatus?: string; enrichedAt?: number; enrichNote?: string;
   stage: Stage; stageBy?: Actor; stageAt?: number;
 };
 export type Signal = {id: string; companyId: string; kind: 'hiring' | 'funding' | 'launch' | 'leadership' | 'tech' | 'news'; text: string; url: string; date?: string};
 export type Competitor = {id: string; name: string; domain?: string; positioning: string; pricing: string; differentiators: string[]; sources: Source[]};
 
 /** One row of the founder's LinkedIn Connections.csv (or typed in). */
-export type Contact = {id: string; name: string; company: string; position: string; url?: string; email?: string; connectedOn?: string};
+/** A link the agent attaches to a chat message, e.g. {label: 'Review 4 drafts', to: 'outreach'}. `to` is a workspace page. */
+export type ChatAction = {label: string; to: 'brief' | 'profile' | 'leads' | 'network' | 'outreach' | 'pipeline' | 'insights'};
+export type ChatMsg = {at: number; from: 'founder' | 'agent'; text: string; actions?: ChatAction[]};
+export type Contact = {id: string; name: string; company: string; position: string; url?: string; email?: string; connectedOn?: string; companySource?: string};
 export type Founder = {name: string; schools: string[]; pastCompanies: string[]; network: Contact[]; networkFile?: string};
 
 export type PathKind = 'colleague' | 'former_colleague' | 'shared_employer' | 'shared_school';
@@ -61,7 +64,7 @@ export type DB = {
   icp: ICP | null; expansions: Expansion[];
   companies: Company[]; people: Person[]; signals: Signal[]; competitors: Competitor[];
   founder: Founder; drafts: Draft[];
-  thoughts: Thought[]; audit: AuditEvent[]; questions: Question[]; icpChanges: IcpChange[]; chat: {at: number; from: 'founder' | 'agent'; text: string}[];
+  thoughts: Thought[]; audit: AuditEvent[]; questions: Question[]; icpChanges: IcpChange[]; chat: ChatMsg[];
   usage: Usage; enrichCache: Record<string, {email?: string; score?: number; status?: string; at: number}>;
 };
 

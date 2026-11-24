@@ -78,9 +78,11 @@ function checkRejectionPattern() {
 }
 
 /* ---------- MCP ---------- */
-const INSTRUCTIONS = `You are Warmpath, a thoughtful go-to-market agent for a founder. You find the right buyers, prefer warm introductions through the founder's own network over cold outreach, and never claim anything you can't source. The founder approves every message; nothing is sent without them.
+const INSTRUCTIONS = `You are The Thread, a thoughtful go-to-market agent for a founder. You find the right buyers, prefer warm introductions through the founder's own network over cold outreach, and never claim anything you can't source. The founder approves every message; nothing is sent without them.
 
 Loop: call wait_for_task, do the work with the tools below, then call wait_for_task again. Narrate meaningful steps with think (short, concrete: "Searching for SaaS companies hiring motion designers"), so the founder can follow along in the Agent Thinking feed.
+
+When you tell the founder to go somewhere ("review the drafts", "check your leads"), attach it as an action on say, e.g. actions: [{label: "Review 4 drafts", to: "outreach"}], so it becomes a button that opens that page. Never mention ids, tool names or env vars.
 
 Typical flow for a new product: save_icp (with honest confidences and 2–4 expansions) → research with WebSearch/WebFetch → add_competitors → add_companies (exclude bad fits with a negative signal and its source) → add_people (real, role-matched buyers with public sources; include their past companies and schools when public, since that's what finds warm paths) → add_signals (hiring, funding, launches, with URLs) → enrich the best leads → find_warm_paths → draft_outreach for Tier A/B leads → review_draft each draft as the Reviewer.
 
@@ -129,8 +131,10 @@ function makeServer() {
     inputSchema: z.object({agent: z.string().default('warmpath').describe('your role, e.g. planner, scout, writer, reviewer'), step: z.string(), detail: z.string().optional()}),
   }, async ({agent, step, detail}) => { think(agent, step, detail); return ok('Shown.'); });
 
-  mcp.registerTool('say', {description: 'Say something to the founder in the chat (answers, short updates, results).', inputSchema: z.object({text: z.string()})},
-    async ({text}) => { db.chat.push({at: Date.now(), from: 'agent', text}); send({type: 'speak', text}); return ok('Said.'); });
+  mcp.registerTool('say', {
+    description: 'Say something to the founder in the chat. Write like a person: short, plain words, no ids, no env vars or tool names. When the founder has something to do, add actions (buttons to the right page) instead of describing where to click; put each next step on its own line starting with "1.", "2."…',
+    inputSchema: z.object({text: z.string(), actions: z.array(z.object({label: z.string().describe('verb first, e.g. "Review 4 drafts"'), to: z.enum(['brief', 'profile', 'leads', 'network', 'outreach', 'pipeline', 'insights'])})).max(3).optional()}),
+  }, async ({text, actions}) => { db.chat.push({at: Date.now(), from: 'agent', text, actions}); send({type: 'speak', text}); return ok('Said.'); });
 
   mcp.registerTool('ask_founder', {description: 'Ask the founder a question with 2–4 options (they can also type their own). Then call wait_for_task for the answer.',
     inputSchema: z.object({question: z.string(), options: z.array(z.string()).min(2).max(4), agent: z.string().default('warmpath')}),
@@ -235,6 +239,28 @@ function makeServer() {
     if (!db.founder.network.length && !db.founder.schools.length && !db.founder.pastCompanies.length) return ok('The founder has not added their network yet. Ask them to upload their LinkedIn Connections.csv in the Network tab (or skip warm paths for now).');
     const L = leads(db).filter((l) => !person_id || l.person.id === person_id);
     return ok(L.map((l) => `${l.person.name} (${l.person.title}, ${l.company?.name}) score ${l.score} tier ${l.tier}\n  ${l.paths.length ? l.paths.map((p) => `${p.kind}: ${p.text}${p.viaContactId ? ` [via ${p.viaContactId}]` : ''}`).join('\n  ') : 'no warm path → cold'}`).join('\n'));
+  });
+
+  mcp.registerTool('list_contacts', {
+    description: "The founder's LinkedIn connections. LinkedIn exports from Dec 2026 have no company or title, so use missing_company=true to get the ones to look up.",
+    inputSchema: z.object({missing_company: z.boolean().optional(), limit: z.number().optional()}),
+  }, async ({missing_company, limit}) => {
+    const cs = db.founder.network.filter((c) => !missing_company || !c.company).slice(0, limit ?? 50);
+    return ok(`${cs.length} of ${db.founder.network.length} connections${missing_company ? ' without a company' : ''}:\n` + cs.map((c) => `${c.id} · ${c.name}${c.company ? ` · ${c.position} at ${c.company}` : ''}${c.url ? ` · ${c.url}` : ''}`).join('\n'));
+  });
+
+  mcp.registerTool('update_contacts', {
+    description: "Fill in where the founder's connections work now, from a public page you actually read (their public profile, a team page, a talk bio). Never guess; skip anyone you can't source.",
+    inputSchema: z.object({contacts: z.array(z.object({id: z.string(), company: z.string(), position: z.string().optional(), source_url: z.string()}))}),
+  }, async ({contacts}) => {
+    let n = 0;
+    for (const u of contacts) {
+      const c = db.founder.network.find((x) => x.id === u.id);
+      if (!c || !/^https?:\/\//.test(u.source_url)) continue;
+      c.company = u.company; if (u.position) c.position = u.position; c.companySource = u.source_url; n++;
+    }
+    audit('ai', 'looked up connections', undefined, `${n} updated`);
+    return ok(`Updated ${n} connections. Run find_warm_paths to see new paths.`);
   });
 
   mcp.registerTool('graph_query', {
@@ -367,9 +393,15 @@ function onMessage(m: Msg) {
     const p = db.people.find((x) => x.id === s('personId'));
     const st = s('stage') as Stage;
     if (p && STAGES.includes(st)) { const from = p.stage; p.stage = st; p.stageBy = 'founder'; p.stageAt = Date.now(); audit('founder', `moved ${from} → ${st}`, p.name); }
+  } else if (m.type === 'contact') {
+    const c = db.founder.network.find((x) => x.id === s('id'));
+    if (!c) return;
+    c.company = s('company').trim(); if (m.position != null) c.position = s('position').trim(); c.companySource = 'founder';
+    audit('founder', 'filled in a connection', c.name, `${c.position ? c.position + ' at ' : ''}${c.company}`);
   } else if (m.type === 'enrich') {
     const p = db.people.find((x) => x.id === s('personId')), c = db.companies.find((x) => x.id === p?.companyId) as Company | undefined;
-    if (p && c) void enrichPerson(db, p, c).then(() => changed());
+    if (p && !c) { p.enrichNote = 'no company on file'; changed(); }
+    if (p && c) { p.enrichNote = 'looking…'; void enrichPerson(db, p, c).then((msg) => { p.enrichNote = p.email ? undefined : msg; audit('founder', 'looked up email', p.name, msg); changed(); }); }
     return;
   }
   changed();

@@ -3,6 +3,7 @@ import {useRoute, StepId} from './route';
 import {Feed, Menu, StepLinks, TopBar} from './ui/Chrome';
 import {Home} from './ui/Home';
 import {Start} from './ui/Start';
+import {AgentToast} from './ui/Agent';
 import {BriefView} from './ui/Brief';
 import {IcpView} from './ui/Icp';
 import {LeadsView} from './ui/Leads';
@@ -24,8 +25,9 @@ export function App() {
   if (route === 'home') return <><Home onMenu={() => setMenu(true)} /><Menu open={menu} onClose={closeMenu} route={route} /></>;
   const View = VIEWS[route];
   return (
-    <div className={`ws ${feed ? 'feed-open' : ''}`}>
+    <div className={`ws ws-${route} ${feed ? 'feed-open' : ''}`}>
       <TopBar route={route} onMenu={() => setMenu(true)} onFeed={() => setFeed(!feed)} feedOpen={feed} />
+      <AgentToast route={route} />
       <main className={`page page-${route}`}>
         <View />
         <StepLinks route={route} />

@@ -2,7 +2,7 @@
 import {useState} from 'react';
 import {useLink} from '../link';
 import {leads, LeadView} from '../../shared/logic';
-import {Stage} from '../../shared/types';
+import {Stage, STAGES} from '../../shared/types';
 import {PageHead} from './Chrome';
 import {Num, Sources} from './Leads';
 
@@ -19,6 +19,17 @@ function Funnel({title, groups}: {title: string; groups: [string, LeadView[]][]}
           return <tr key={k}><td>{k}</td><td>{ls.length}</td><td>{n(1)}</td><td>{n(2)} <span className="quiet">{pct(n(2), n(1))}</span></td><td>{n(3)}</td><td>{n(4)}</td></tr>;
         })}</tbody>
       </table>
+    </div>
+  );
+}
+function Bars({title, rows}: {title: string; rows: [string, number, boolean][]}) {
+  const max = Math.max(1, ...rows.map((r) => r[1]));
+  return (
+    <div className="bars">
+      <h3>{title}</h3>
+      {rows.map(([k, v, hi]) => (
+        <div key={k} className="bar-row"><span className="bar-k">{k}</span><span className="bar-track"><i className={hi ? 'hi' : ''} style={{width: `${(v / max) * 100}%`}} /></span><span className="bar-v">{v}</span></div>
+      ))}
     </div>
   );
 }
@@ -48,6 +59,11 @@ export function InsightsView() {
         <div className="number-row"><Num n={db.drafts.length} /><p>drafts written, {db.drafts.filter((d) => d.kind === 'intro_request').length} of them intro requests through someone you know.</p></div>
         <div className="number-row"><Num n={approvedN} /><p>approved by you and queued. {db.drafts.filter((d) => d.status === 'rejected').length} rejected, and the agent learns from why.</p></div>
         <div className="number-row"><Num n={repliedN} /><p>{repliedN === 1 ? 'reply' : 'replies'} so far. {warm.approved || cold.approved ? <>Warm intros {pct(warm.replied, warm.approved)}, cold emails {pct(cold.replied, cold.approved)}.</> : 'Reply rates show up once something is queued.'}</p></div>
+      </div>
+      <div className="charts">
+        <Bars title="Leads by tier" rows={(['A', 'B', 'C'] as const).map((t) => [`Tier ${t}`, L.filter((l) => l.tier === t).length, t === 'A'])} />
+        <Bars title="Where they are" rows={STAGES.map((st) => [st.charAt(0).toUpperCase() + st.slice(1), L.filter((l) => l.person.stage === st).length, st === 'meeting' || st === 'closed'])} />
+        <Bars title="How you reach them" rows={[['Warm path', L.filter((l) => l.paths.length).length, true], ['Cold', L.filter((l) => !l.paths.length).length, false]]} />
       </div>
       <div className="two">
         <Funnel title="By tier" groups={group(L, (l) => `Tier ${l.tier}`).sort()} />
