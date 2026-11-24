@@ -1,0 +1,7 @@
+node_modules
+dist
+.env
+data/db.json
+data/*.csv
+!data/sample-connections.csv
+.DS_Store
