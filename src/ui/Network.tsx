@@ -2,7 +2,7 @@
 import {useEffect, useState} from 'react';
 import {Icon} from './Icon';
 import {post, sendWs, useLink} from '../link';
-import {leads, superConnectors} from '../../shared/logic';
+import {leads, superConnectors, safeHref} from '../../shared/logic';
 import type {Contact} from '../../shared/types';
 import {Hops, Tier} from './Leads';
 
@@ -17,7 +17,7 @@ function NeedsRow({c}: {c: Contact}) {
   const save = () => { if (company.trim()) sendWs({type: 'contact', id: c.id, company: company.trim(), ...(position.trim() ? {position: position.trim()} : {})}); };
   return (
     <div className="needs-row">
-      <div className="nr-name">{c.url ? <a className="u" href={c.url} target="_blank" rel="noreferrer">{c.name}</a> : c.name}{c.connectedOn && <span className="quiet small"> · since {c.connectedOn}</span>}</div>
+      <div className="nr-name">{c.url ? <a className="u" href={safeHref(c.url)} target="_blank" rel="noreferrer">{c.name}</a> : c.name}{c.connectedOn && <span className="quiet small"> · since {c.connectedOn}</span>}</div>
       <input value={company} onChange={(e) => setCompany(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} placeholder="Company" aria-label={`Company for ${c.name}`} />
       <input value={position} onChange={(e) => setPosition(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && save()} placeholder="Title (optional)" aria-label={`Title for ${c.name}`} />
       <button className="pill sm" disabled={!company.trim()} onClick={save}>Save</button>
@@ -90,7 +90,7 @@ export function NetworkView() {
             <div className="quiet small">{c.title}, {c.company}</div>
             <p>{c.why}</p>
             {c.unlocks.length > 0 && <p className="small"><span className="quiet">Could open:</span> {c.unlocks.join(', ')}</p>}
-            {c.sources.length > 0 && <p className="small quiet">{c.sources.map((x, i) => <a key={i} className="u" href={x.url} target="_blank" rel="noreferrer">{x.title ?? host(x.url)}</a>).reduce<React.ReactNode[]>((a, el, i) => (i ? [...a, ' · ', el] : [el]), [])}</p>}
+            {c.sources.length > 0 && <p className="small quiet">{c.sources.map((x, i) => <a key={i} className="u" href={safeHref(x.url)} target="_blank" rel="noreferrer">{x.title ?? host(x.url)}</a>).reduce<React.ReactNode[]>((a, el, i) => (i ? [...a, ' · ', el] : [el]), [])}</p>}
             <div className="pills"><button className="pill sm solid" onClick={() => sendWs({type: 'connector', id: c.id, action: 'done'})}>I've met them</button><button className="link" onClick={() => sendWs({type: 'connector', id: c.id, action: 'dismissed'})}>Not now</button></div>
           </div>))}
         </div>}
@@ -104,7 +104,7 @@ export function NetworkView() {
           <div key={i} className={`move ${m.intoTarget ? 'target' : ''}`}>
             <span className="mv-name">{m.name}</span>
             <span className="mv-to"><Icon name="arrow-right" size={15} /> {m.to}{m.position && `, ${m.position}`}{m.intoTarget && <span className="joined">target company</span>}</span>
-            <span className="quiet small">from {m.from || 'unknown'} · {new Date(m.at).toLocaleDateString([], {month: 'short', day: 'numeric'})} · <a className="u" href={m.source} target="_blank" rel="noreferrer">{host(m.source)}</a></span>
+            <span className="quiet small">from {m.from || 'unknown'} · {new Date(m.at).toLocaleDateString([], {month: 'short', day: 'numeric'})} · <a className="u" href={safeHref(m.source)} target="_blank" rel="noreferrer">{host(m.source)}</a></span>
           </div>))}
       </section>}
 

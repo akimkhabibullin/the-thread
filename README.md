@@ -61,7 +61,9 @@ No passwords and no scraping of logged-in sites. Your network comes only from yo
 
 ## Security
 
-Snyk scan: see below.
+Scanned with Snyk on 24 Nov 2026.
 
-- `snyk test`: TODO
-- `snyk code test`: TODO
+- `snyk test` (open-source dependencies): 79 dependencies tested, **0 issues, 0 vulnerable paths**.
+- `snyk code test` (static analysis): first run found 5 (0 high, 2 medium, 3 low). Fixed 4: source links from the agent or a CSV now only render as `http(s)` links (DOM XSS), and the network upload body is validated with zod (type validation). **1 open, accepted:** "HTTP instead of HTTPS" on the bridge, which listens on `127.0.0.1` only and never leaves the machine.
+
+Other measures: API keys stay in `.env` (git-ignored) and only on the local bridge; the bridge listens on 127.0.0.1 only; the app never asks for LinkedIn passwords or scrapes logged-in pages; nothing is sent without the founder's approval.

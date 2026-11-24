@@ -1,7 +1,7 @@
 // Step 05: a mail reader. Drafts on the left; the selected sequence reads like real email, with footnoted sources and a clear action bar.
 import {useEffect, useState} from 'react';
 import {sendWs, useLink} from '../link';
-import {leads} from '../../shared/logic';
+import {leads, safeHref} from '../../shared/logic';
 import type {Claim, Draft, Touch} from '../../shared/types';
 import {Empty, PageHead} from './Chrome';
 import {Tier} from './Leads';
@@ -16,7 +16,7 @@ export function WithProof({text, claims, notes}: {text: string; claims: Claim[];
     if (!best) { parts.push(rest); break; }
     parts.push(rest.slice(0, best.i));
     const n = notes?.get(best.c.url);
-    parts.push(<a key={k++} className="claim" href={best.c.url} target="_blank" rel="noreferrer" title={best.c.url}>{best.c.text}{n && <sup>{n}</sup>}</a>);
+    parts.push(<a key={k++} className="claim" href={safeHref(best.c.url)} target="_blank" rel="noreferrer" title={best.c.url}>{best.c.text}{n && <sup>{n}</sup>}</a>);
     rest = rest.slice(best.i + best.c.text.length);
   }
   return <>{parts}</>;
@@ -63,7 +63,7 @@ function Reader({d}: {d: Draft}) {
           ))}
         </ol>
         {notes.size > 0 && <ol className="footnotes">
-          {[...notes.entries()].map(([url, n]) => <li key={url} value={n}><a className="u" href={url} target="_blank" rel="noreferrer">{d.claims.find((c) => c.url === url)?.text}</a> <span className="quiet">· {host(url)}</span></li>)}
+          {[...notes.entries()].map(([url, n]) => <li key={url} value={n}><a className="u" href={safeHref(url)} target="_blank" rel="noreferrer">{d.claims.find((c) => c.url === url)?.text}</a> <span className="quiet">· {host(url)}</span></li>)}
         </ol>}
         <aside className="margin-note">
           {r ? <>

@@ -119,3 +119,9 @@ export function parseConnections(csv: string): Omit<Contact, 'id'>[] {
     url: r[url] || undefined, email: r[em] || undefined, connectedOn: r[on] || undefined,
   })).filter((c) => c.name); // LinkedIn exports from Dec 2026 drop company/position; the agent can fill them in later
 }
+
+/** Only http(s) links reach an href: agent- and CSV-supplied URLs could carry javascript: or data: payloads. */
+export function safeHref(u?: string): string | undefined {
+  if (!u) return undefined;
+  try { const x = new URL(u); return x.protocol === 'https:' || x.protocol === 'http:' ? x.href : undefined; } catch { return undefined; }
+}

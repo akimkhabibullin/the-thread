@@ -1,12 +1,12 @@
 // Step 03: real companies and buyers, each with sources, a fit & intent score and the best warm path. Click a row for why.
 import {Fragment, useEffect, useState} from 'react';
 import {sendWs, useLink} from '../link';
-import {leads} from '../../shared/logic';
+import {leads, safeHref} from '../../shared/logic';
 import type {Source} from '../../shared/types';
 import {Empty, PageHead} from './Chrome';
 import {readSeen, writeSeen} from './Agent';
 
-export const Sources = ({s}: {s: Source[]}) => <span className="sources">{s.map((x, i) => <a key={i} href={x.url} target="_blank" rel="noreferrer" title={x.title ?? x.url} onClick={(e) => e.stopPropagation()}>{i + 1}</a>)}</span>;
+export const Sources = ({s}: {s: Source[]}) => <span className="sources">{s.map((x, i) => <a key={i} href={safeHref(x.url)} target="_blank" rel="noreferrer" title={x.title ?? x.url} onClick={(e) => e.stopPropagation()}>{i + 1}</a>)}</span>;
 export const Num = ({n, className = ''}: {n: number | string; className?: string}) => <span className={`num ${className}`}>{n}</span>;
 export const Tier = ({tier, score}: {tier: string; score: number}) => <span className="tier" title={`Score ${score}`}>Tier {tier} · {score}</span>;
 const PATH_LABEL = {colleague: 'knows someone there', former_colleague: 'knows an ex-colleague', shared_employer: 'same ex-employer', shared_school: 'same school', shared_community: 'same community'};
@@ -94,7 +94,7 @@ export function LeadsView() {
                 <div><h4>Why this score</h4><ul>{l.reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
                   <div className="quiet small">Fit {l.fit} of 60 · intent {l.intent} of 25 · warm {l.warm} of 15</div></div>
                 <div><h4>Warm paths</h4>{l.paths.length ? l.paths.map((p, i) => <div key={i} className="mini-path"><Hops hops={p.hops} /><div className="quiet small">{p.text}</div></div>) : <div className="quiet">No path found in your network.</div>}</div>
-                <div><h4>Signals</h4>{l.signals.map((s) => <div key={s.id} className="sig">{s.kind === 'job_change' ? <span className="joined">just joined</span> : <span className="kind">{s.kind}</span>}<a className="u" href={s.url} target="_blank" rel="noreferrer">{s.text}</a></div>)}
+                <div><h4>Signals</h4>{l.signals.map((s) => <div key={s.id} className="sig">{s.kind === 'job_change' ? <span className="joined">just joined</span> : <span className="kind">{s.kind}</span>}<a className="u" href={/^https?:\/\//i.test(s.url) ? encodeURI(s.url) : undefined} target="_blank" rel="noreferrer">{s.text}</a></div>)}
                   {!l.signals.length && <div className="quiet">None found.</div>}
                   <div className="small src-line">Person <Sources s={l.person.sources} /> Company <Sources s={l.company?.sources ?? []} /></div>
                   {l.company?.why && <p className="quiet small">{l.company.why}</p>}

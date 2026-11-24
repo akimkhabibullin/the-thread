@@ -347,7 +347,12 @@ app.post('/mcp', async (req, res) => {
 app.get('/mcp', (_req, res) => { res.status(405).set('Allow', 'POST').end(); });
 
 app.post('/api/network', express.json({limit: '20mb'}), (req, res) => {
-  const {csv, name, schools, pastCompanies, communities, fileName} = req.body as {csv?: string; name?: string; schools?: string[]; pastCompanies?: string[]; communities?: string[]; fileName?: string};
+  const parsed = z.object({
+    csv: z.string().optional(), name: z.string().max(200).optional(), fileName: z.string().max(300).optional(),
+    schools: z.array(z.string().max(200)).max(50).optional(), pastCompanies: z.array(z.string().max(200)).max(50).optional(), communities: z.array(z.string().max(200)).max(50).optional(),
+  }).safeParse(req.body);
+  if (!parsed.success) { res.status(400).json({ok: false, error: 'invalid body'}); return; }
+  const {csv, name, schools, pastCompanies, communities, fileName} = parsed.data;
   if (communities) db.founder.communities = communities.filter(Boolean);
   if (name != null) db.founder.name = name;
   if (schools) db.founder.schools = schools.filter(Boolean);
