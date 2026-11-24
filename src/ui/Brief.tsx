@@ -101,7 +101,7 @@ export function BriefView() {
       {(openQ.length > 0 || openC.length > 0) && <div className="asks" id="asks">
         {openQ.map((q) => (
           <div key={q.qid} className="paper ask">
-            <div className="who">{q.agent} asks you</div>
+            <div className="who"><AgentMark size={22} /> asks you{q.agent && !/warmpath|thread/i.test(q.agent) ? ` · ${q.agent}` : ''}</div>
             <h3>{q.question}</h3>
             <div className="pills">{q.options.map((o) => <button key={o} className="pill" onClick={() => sendWs({type: 'answer', qid: q.qid, text: o})}>{o}</button>)}</div>
           </div>

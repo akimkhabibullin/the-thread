@@ -1,4 +1,4 @@
-// Warmpath's data model. Everything the agent finds carries its sources; everything anyone does is in the audit log.
+// The Thread's data model. Everything the agent finds carries its sources; everything anyone does is in the audit log.
 
 export type Source = {url: string; title?: string};
 export type Conf<T> = {value: T; confidence: number; why?: string};

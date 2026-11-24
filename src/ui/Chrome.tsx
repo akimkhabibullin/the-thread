@@ -1,6 +1,6 @@
 // The frame around every page: logo, hamburger menu panel, quiet status line, agent feed, page heads and step links.
 import {useEffect, useRef, useState} from 'react';
-import {ago, post, useLink} from '../link';
+import {ago, post, sendWs, useLink} from '../link';
 import {href, pad, Route, STEPS, StepId} from '../route';
 import {useStartHref} from './Start';
 import {AgentMark} from './Agent';
@@ -54,7 +54,7 @@ export function Menu({open, onClose, route}: {open: boolean; onClose: () => void
         <div className="menu-lines">
           <span>Agent <u>{agentLabel(connected, status)}</u></span>
           <span><u>{db.usage.credits} credits</u> left</span>
-          {(!connected || status === 'offline') && <span className="hint">Run <code>/warmpath</code> in Claude Code to start the agent.</span>}
+          {(!connected || status === 'offline') && <span className="hint">Run <code>/thread</code> in Claude Code to start the agent.</span>}
         </div>
       </nav>
     </div>
@@ -79,7 +79,24 @@ export function Feed({open, onClose}: {open: boolean; onClose: () => void}) {
         {!db.thoughts.length && <p className="quiet">Its steps show up here while it works.</p>}
         <div ref={end} />
       </div>
+      <FeedComposer />
     </aside>
+  );
+}
+
+/** Talk to the agent from any page: the last thing it said, and a box to answer. */
+function FeedComposer() {
+  const {db} = useLink();
+  const [text, setText] = useState('');
+  const last = [...db.chat].reverse().find((m) => m.from === 'agent');
+  const send = () => { const t = text.trim(); if (!t) return; sendWs({type: 'task', text: t, kind: db.icp ? 'chat' : 'intake'}); setText(''); };
+  return (
+    <div className="feed-compose">
+      {last && <div className="feed-last"><span className="meta">Last message · {ago(last.at)} ago</span><p>{last.text.length > 220 ? last.text.slice(0, 220) + '…' : last.text}</p></div>}
+      <textarea rows={2} value={text} placeholder="Message the agent: “find leads in fintech”, “skip agencies”…" onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }} />
+      <div className="feed-compose-row"><a href={href('brief')}>Full conversation →</a><button className="pill solid" onClick={send} disabled={!text.trim()}>Send</button></div>
+    </div>
   );
 }
 

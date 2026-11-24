@@ -131,10 +131,10 @@ export function Start({onMenu}: {onMenu: () => void}) {
               <Copy cmd="cd /path/to/the-thread" />
               <Copy cmd="claude" />
               <p className="small">Then, inside Claude Code, type:</p>
-              <Copy cmd="/warmpath" />
+              <Copy cmd="/thread" />
               <h3 className="mt">Or from any other project</h3>
               <p className="small">Add The Thread as an MCP server, then ask Claude to start it.</p>
-              <Copy cmd="claude mcp add --transport http warmpath http://127.0.0.1:5299/mcp" />
+              <Copy cmd="claude mcp add --transport http thread http://127.0.0.1:5299/mcp" />
             </div>
             <div className="agent-status">
               {agentOn ? <><div className="connected">Connected<i>.</i></div><p>The agent is {status === 'working' ? 'working' : 'listening'}. You can continue.</p></>

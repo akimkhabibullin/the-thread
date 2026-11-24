@@ -70,7 +70,7 @@ ul { padding-left: 18px; margin: 0 0 10px; }
 .feed.open { transform: none; }
 .feed-top { display: flex; justify-content: space-between; align-items: center; padding: 22px 24px 10px 28px; font-size: 13px; font-weight: 700; }
 .feed-top em { font-style: normal; font-weight: 400; color: var(--muted); }
-.feed-list { overflow-y: auto; padding: 10px 28px 40px; }
+.feed-list { flex: 1; min-height: 0; overflow-y: auto; padding: 10px 28px 40px; }
 .thought { padding: 12px 0; font-size: 14px; line-height: 1.5; }
 .thought .meta { font-size: 11px; color: var(--muted); letter-spacing: 0.04em; margin-bottom: 2px; }
 .thought .detail { color: var(--muted); font-size: 13px; }
@@ -273,7 +273,7 @@ table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
   background-image:
     repeating-linear-gradient(90deg, rgba(255, 255, 255, .045) 0 1px, transparent 1px 9px),
     repeating-linear-gradient(90deg, rgba(0, 0, 0, .35) 0 3px, transparent 3px 9px); }
-.hero::after { content: ''; position: absolute; right: -6vw; top: 14vh; width: 70vw; height: 60vh; background: url('/brand/thread-mark-white.png') no-repeat center / contain; opacity: .035; pointer-events: none; }
+.hero::after { content: ''; position: absolute; right: -6vw; top: 14vh; width: 70vw; height: 60vh; background: url('/brand/thread-mark-white.png') no-repeat center / contain; opacity: .07; pointer-events: none; }
 .hero-top { display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; }
 .hero-top .logo img { height: 30px; }
 .hero-copy { margin-top: auto; position: relative; z-index: 2; display: flex; align-items: flex-end; gap: 4vw; }
@@ -306,7 +306,7 @@ table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
 .band h2 { font-size: clamp(44px, 5vw, 72px); text-align: center; margin-bottom: 8vh; }
 .band { padding-left: 0; padding-right: 0; }
 .band h2, .band > .center { padding: 0 var(--gutter); }
-.cards { display: flex; gap: 22px; overflow-x: auto; padding: 0 var(--gutter) 8px; margin: 0 0 8vh; scroll-padding-left: var(--gutter); scrollbar-width: thin; }
+.cards { display: flex; justify-content: safe center; gap: 22px; overflow-x: auto; padding: 0 var(--gutter) 8px; margin: 0 0 8vh; scroll-padding-left: var(--gutter); scrollbar-width: thin; }
 .cards::after { content: ''; flex: 0 0 1px; }
 .dcard { position: relative; flex: 0 0 clamp(280px, 28vw, 400px); aspect-ratio: 4 / 5; background: #1d1d1d center / cover no-repeat; color: #fff; padding: 22px 26px 28px; display: flex; flex-direction: column; justify-content: space-between; overflow: hidden; }
 .dcard::before { content: ''; position: absolute; inset: 0; background: rgba(0, 0, 0, .45); transition: background .3s; }
@@ -648,3 +648,19 @@ table.mini { width: 100%; border-collapse: collapse; font-size: 14px; }
 .grows-grid h3 { font-size: 30px; margin-bottom: 10px; }
 .grows-grid p { margin: 0; font-size: 15px; }
 @media (max-width: 960px) { .grows-grid, .super-row, .move, .net-stats { grid-template-columns: 1fr; } }
+
+.feed-compose { border-top: 1px solid rgba(0,0,0,.12); padding: 16px 22px 20px; display: flex; flex-direction: column; gap: 10px; background: inherit; }
+.feed-compose textarea { width: 100%; resize: none; font: inherit; font-size: 15px; padding: 10px 12px; border: 1px solid rgba(0,0,0,.2); border-radius: 10px; background: #fff; color: #121212; max-height: 140px; }
+.feed-compose-row { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+.feed-compose-row a { color: inherit; }
+.feed-last .meta { font-size: 11px; opacity: .6; }
+.feed-last p { margin: 4px 0 0; font-size: 13px; line-height: 1.45; }
+
+/* leads table: never squash names; scroll sideways instead of breaking words */
+.leads-scroll { overflow-x: auto; margin: 0 calc(-1 * var(--gutter, 0px)); padding: 0 var(--gutter, 0px); }
+.leads-scroll table.leads { min-width: 1080px; }
+.leads td { overflow-wrap: break-word; word-break: normal; }
+.page-leads .leads th:nth-child(1) { width: 160px; }
+.leads th:nth-child(2) { width: 20%; } .leads th:nth-child(3) { width: 16%; }
+.lead-name { hyphens: none; }
+@media (max-width: 960px) { .leads-scroll table.leads { min-width: 0; } }

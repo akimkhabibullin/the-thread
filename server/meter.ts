@@ -13,6 +13,6 @@ export function meter(db: DB, name: Meter, n = 1) {
   const base = process.env.FLEXPRICE_API_URL ?? 'https://api.cloud.flexprice.io/v1';
   void fetch(`${base}/events`, {
     method: 'POST', headers: {'Content-Type': 'application/json', 'x-api-key': key},
-    body: JSON.stringify({event_name: name, external_customer_id: process.env.FLEXPRICE_CUSTOMER_ID ?? 'demo-founder', properties: {count: n}, source: 'warmpath', timestamp: new Date().toISOString()}),
+    body: JSON.stringify({event_name: name, external_customer_id: process.env.FLEXPRICE_CUSTOMER_ID ?? 'demo-founder', properties: {count: n}, source: 'the-thread', timestamp: new Date().toISOString()}),
   }).then(async (r) => { if (!r.ok) console.warn('[flexprice]', r.status, (await r.text()).slice(0, 200)); }).catch((e) => console.warn('[flexprice]', String(e)));
 }

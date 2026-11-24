@@ -1,4 +1,4 @@
-// Warmpath's local bridge. One process:
+// The Thread's local bridge. One process:
 //   • /mcp — Claude Code connects here (see .mcp.json) and does the GTM work through tools
 //   • /ws  — the web app gets live state and sends the founder's input, approvals and rejections
 //   • /api — network upload, demo snapshots, health
@@ -95,7 +95,7 @@ const err = (text: string) => ({content: [{type: 'text' as const, text}], isErro
 const findCompany = (ref: string) => db.companies.find((c) => c.id === ref || sameOrg(c.name, ref) || (c.domain && norm(c.domain) === norm(ref)));
 
 function makeServer() {
-  const mcp = new McpServer({name: 'warmpath', version: '0.1.0'}, {instructions: INSTRUCTIONS});
+  const mcp = new McpServer({name: 'thread', version: '0.1.0'}, {instructions: INSTRUCTIONS});
   const reg = mcp.registerTool.bind(mcp) as (...a: unknown[]) => unknown;
   (mcp as unknown as {registerTool: unknown}).registerTool = (name: string, cfg: unknown, cb: (...a: unknown[]) => Promise<{isError?: boolean; content: {type: string; text?: string}[]}>) =>
     reg(name, cfg, async (...args: unknown[]) => {
@@ -128,7 +128,7 @@ function makeServer() {
       founder: {name: db.founder.name, schools: db.founder.schools, pastCompanies: db.founder.pastCompanies, connections: db.founder.network.length}})));
 
   mcp.registerTool('think', {description: 'Add a line to the founder\'s live Agent Thinking feed. Use for meaningful steps, not every call.',
-    inputSchema: z.object({agent: z.string().default('warmpath').describe('your role, e.g. planner, scout, writer, reviewer'), step: z.string(), detail: z.string().optional()}),
+    inputSchema: z.object({agent: z.string().default('planner').describe('your role, e.g. planner, scout, writer, reviewer'), step: z.string(), detail: z.string().optional()}),
   }, async ({agent, step, detail}) => { think(agent, step, detail); return ok('Shown.'); });
 
   mcp.registerTool('say', {
@@ -137,7 +137,7 @@ function makeServer() {
   }, async ({text, actions}) => { db.chat.push({at: Date.now(), from: 'agent', text, actions}); send({type: 'speak', text}); return ok('Said.'); });
 
   mcp.registerTool('ask_founder', {description: 'Ask the founder a question with 2–4 options (they can also type their own). Then call wait_for_task for the answer.',
-    inputSchema: z.object({question: z.string(), options: z.array(z.string()).min(2).max(4), agent: z.string().default('warmpath')}),
+    inputSchema: z.object({question: z.string(), options: z.array(z.string()).min(2).max(4), agent: z.string().default('planner')}),
   }, async ({question, options, agent}) => { db.questions.push({qid: uid('q'), question, options, agent, at: Date.now()}); status('listening'); return ok('Asked. Call wait_for_task for the answer.'); });
 
   mcp.registerTool('save_icp', {
@@ -464,4 +464,4 @@ wss.on('connection', (w) => {
   w.on('close', () => clients.delete(w));
 });
 setInterval(() => { if (lastAgentAt && Date.now() - lastAgentAt > 150_000 && !waiter) status('offline'); }, 15_000);
-http.listen(PORT, '127.0.0.1', () => console.log(`[warmpath] bridge on http://127.0.0.1:${PORT}  (MCP: /mcp, app: /ws)  hunter:${!!process.env.HUNTER_API_KEY} flexprice:${!!process.env.FLEXPRICE_API_KEY}`));
+http.listen(PORT, '127.0.0.1', () => console.log(`[thread] bridge on http://127.0.0.1:${PORT}  (MCP: /mcp, app: /ws)  hunter:${!!process.env.HUNTER_API_KEY} flexprice:${!!process.env.FLEXPRICE_API_KEY}`));

@@ -76,7 +76,7 @@ export function LeadsView() {
         </select></label>
         <span className="count">{L.length} {L.length === 1 ? 'result' : 'results'}</span>
       </div>
-      <table className="leads">
+      <div className="leads-scroll"><table className="leads">
         <thead><tr><th>Score</th><th>Person</th><th>Company</th><th>Signal</th><th>Sources</th><th>Warm path</th><th>Email</th></tr></thead>
         <tbody>{L.map((l) => (
           <Fragment key={l.person.id}>
@@ -104,7 +104,7 @@ export function LeadsView() {
             </td></tr>}
           </Fragment>))}
         </tbody>
-      </table>
+      </table></div>
       {!L.length && <p className="quiet center mt">Nothing matches. <button className="link" onClick={() => { setQ(''); setTiers(new Set()); setWarmOnly(''); setEmailOnly(false); }}>Clear filters</button></p>}
     </div>
   );
